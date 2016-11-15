@@ -6,6 +6,7 @@ import (
 )
 
 type Conf struct {
+	First bool
 	// Name of the package.
 	PackN string
 	// Name of the link type.
@@ -29,15 +30,23 @@ func init() {
 	tmpl = t
 }
 
-func New(nodeT, linkT, linkN, treeT, packN string) *Conf {
-	return &Conf{packN, linkT, treeT, nodeT, linkN}
+func New(nodeT, linkT, linkN, treeT, packN string, first bool) *Conf {
+	return &Conf{first, packN, linkT, treeT, nodeT, linkN}
 }
 
 func (c *Conf) Gen(out io.Writer) error {
 	return tmpl.Execute(out, c)
 }
 
-const tmplText = `{{if .PackN}}package {{.PackN}}{{end}}
+const tmplText = `{{if .First}}package {{.PackN}}
+
+func btoi(a bool) int {
+	if a {
+		return 1
+	}
+	return 0
+}
+{{end}}
 
 type {{.LinkT}} struct {
 	nodes  [2]{{.TreeT}}
@@ -46,13 +55,6 @@ type {{.LinkT}} struct {
 
 type {{.TreeT}} struct {
 	n *{{.NodeT}}
-}
-
-func btoi(a bool) int {
-	if a {
-		return 1
-	}
-	return 0
 }
 
 func (p *{{.TreeT}}) height() int {
@@ -102,7 +104,7 @@ func (p *{{.TreeT}}) rebalance() {
 	p.rotate(d ^ 1)
 }
 
-func (p *{{.TreeT}}) Insert(x *{{.NodeT}}) {
+func (p *{{.TreeT}}) insert(x *{{.NodeT}}) {
 	if p.n == nil {
 		x.{{.LinkN}}.nodes[0].n = nil
 		x.{{.LinkN}}.nodes[1].n = nil
@@ -123,11 +125,11 @@ func (p *{{.TreeT}}) Insert(x *{{.NodeT}}) {
 	 *
 	 * The _ in the statement above is for equality.
 	 */
-	p.n.{{.LinkN}}.nodes[btoi(less)].Insert(x)
+	p.n.{{.LinkN}}.nodes[btoi(less)].insert(x)
 	p.rebalance()
 }
 
-func (a *{{.TreeT}}) Lookup(x *{{.NodeT}}) *{{.NodeT}} {
+func (a *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	n := a.n
 
 	for n != nil {

@@ -31,6 +31,7 @@ func main() {
 	}
 	packN := f.Name.Name
 	confs := []*avlgen.Conf{}
+	first := true
 	ast.Inspect(f, func(n ast.Node) bool {
 
 		typ, ok := n.(*ast.TypeSpec)
@@ -61,8 +62,8 @@ func main() {
 			if len(f.Names) != 1 {
 				panic("Make my life easier, give the struct field one name and one name only, please.")
 			}
-			confs = append(confs, avlgen.New(typ.Name.Name, fType.Name, f.Names[0].Name, tv, packN))
-			packN = "" // lazy cheat, only generate package string for the first conf
+			confs = append(confs, avlgen.New(typ.Name.Name, fType.Name, f.Names[0].Name, tv, packN, first))
+			first = false
 		}
 		return true
 	})

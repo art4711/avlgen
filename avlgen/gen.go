@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-type conf struct {
+type Conf struct {
 	// Name of the package.
 	PackN string
 	// Name of the link type.
@@ -29,15 +29,15 @@ func init() {
 	tmpl = t
 }
 
-func New(nodeT, linkT, linkN, treeT, packN string) *conf {
-	return &conf{packN, linkT, treeT, nodeT, linkN}
+func New(nodeT, linkT, linkN, treeT, packN string) *Conf {
+	return &Conf{packN, linkT, treeT, nodeT, linkN}
 }
 
-func (c *conf) Gen(out io.Writer) error {
+func (c *Conf) Gen(out io.Writer) error {
 	return tmpl.Execute(out, c)
 }
 
-const tmplText = `package {{.PackN}}
+const tmplText = `{{if .PackN}}package {{.PackN}}{{end}}
 
 type {{.LinkT}} struct {
 	nodes  [2]{{.TreeT}}

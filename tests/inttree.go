@@ -1,10 +1,10 @@
 package trees
 
-//go:generate go run ../cmd/manual/avlgen.go iV tLink tLink iT trees inttree_gen.go
+//go:generate go run ../cmd/avlgen/main.go -- inttree.go
 
 type iV struct {
 	v     int
-	tLink tLink
+	tlink tLink `avlgen:"iT"`
 }
 
 func (a *iV) cmp(b *iV) (bool, bool) {

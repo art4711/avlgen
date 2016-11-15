@@ -135,7 +135,9 @@ The Go compiler (1.7.3) manages:
 
 Let's do three branches instead of three instructions.
 
-I still haven't found a way to fix this.
+I still haven't found a way to fix this. There is a mention in an
+issue that the compiler in tip (1.8?) should be able to deal with
+this better: https://github.com/golang/go/issues/6011#issuecomment-254303032
 
 ## Benchmarketing
 

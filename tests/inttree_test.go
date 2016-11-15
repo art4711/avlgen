@@ -6,12 +6,70 @@ func TestIntsBasic(t *testing.T) {
 	tr := iT{}
 
 	for i := 0; i < 600; i++ {
-		tr.Insert(&iV{v: i})
+		tr.insert(&iV{v: i})
 	}
 	for i := 0; i < 600; i++ {
-		v := tr.Lookup(&iV{v: i})
+		v := tr.lookup(&iV{v: i})
 		if v.v != i {
 			t.Errorf("%v != %v\n", i, v.v)
 		}
 	}
+}
+
+func BenchmarkKV1Mlinear(b *testing.B) {
+	const sz = 1000000
+
+	b.ReportAllocs()
+
+	tr := ikvt{}
+	b.Run("insert", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			tr = ikvt{} // drop the whole tree each time
+			for i := 0; i < sz; i++ {
+				tr.insert(&iKV{k: i, v: i * 3})
+			}
+			b.SetBytes(sz)
+		}
+	})
+	// we have one tree left
+	b.Run("lookup", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			for i := 0; i < sz; i++ {
+				kv := tr.lookup(&iKV{k: i})
+				if kv.v != i*3 {
+					b.Fatal("bad value %v\n", kv)
+				}
+			}
+			b.SetBytes(sz)
+		}
+	})
+}
+
+func BenchmarkMap1Mlinear(b *testing.B) {
+	const sz = 1000000
+
+	b.ReportAllocs()
+
+	tr := map[int]int{}
+	b.Run("insert", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			tr = map[int]int{} // drop the whole map each time
+			for i := 0; i < sz; i++ {
+				tr[i] = i * 3
+			}
+			b.SetBytes(sz)
+		}
+	})
+	// we have one tree left
+	b.Run("lookup", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			for i := 0; i < sz; i++ {
+				v := tr[i]
+				if v != i*3 {
+					b.Fatal("bad value %v\n", v)
+				}
+			}
+			b.SetBytes(sz)
+		}
+	})
 }

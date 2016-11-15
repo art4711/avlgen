@@ -10,3 +10,12 @@ type iV struct {
 func (a *iV) cmp(b *iV) (bool, bool) {
 	return a.v == b.v, a.v < b.v
 }
+
+type iKV struct {
+	k, v int
+	tl   tl `avlgen:"ikvt"`
+}
+
+func (a *iKV) cmp(b *iKV) (bool, bool) {
+	return a.k == b.k, a.k < b.k
+}

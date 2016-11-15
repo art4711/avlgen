@@ -41,10 +41,19 @@ func (c *Conf) Gen(out io.Writer) error {
 const tmplText = `{{if .First}}package {{.PackN}}
 
 func btoi(a bool) int {
+	// See: https://github.com/golang/go/issues/6011#issuecomment-254303032
+	//
+	// Hopefully this will make the generated code suck less in the
+	// future because currently it's comically bad. false is branch
+	// predicted by the compiler to be unlikely, it's put after the
+	// function, jumps back, then the compiler forgets that it just
+	// loaded 0 or 1 into a register and does a bounds check on a 2
+	// element array.
+	x := 0
 	if a {
-		return 1
+		x = 1
 	}
-	return 0
+	return x
 }
 {{end}}
 

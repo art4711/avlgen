@@ -17,7 +17,7 @@ func main() {
 	nodeT := flag.Arg(0)
 	outF := flag.Arg(1)
 	c := avlgen.New(nodeT)
-	out, err := os.OpenFile(outF, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, 0644)
+	out, err := os.OpenFile(outF, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "open: %v\n", err)
 		os.Exit(1)

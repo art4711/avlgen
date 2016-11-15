@@ -6,6 +6,8 @@ import (
 )
 
 type conf struct {
+	// Name of the package.
+	PackN string
 	// Name of the link type.
 	LinkT string
 	// Name of the tree type.
@@ -27,15 +29,16 @@ func init() {
 	tmpl = t
 }
 
-func New(nodeT string) *conf {
-	return &conf{"avlLink", "avlTree", nodeT, "treeLink"}
+func New(nodeT, linkT, linkN, treeT, packN string) *conf {
+	return &conf{packN, linkT, treeT, nodeT, linkN}
 }
 
 func (c *conf) Gen(out io.Writer) error {
 	return tmpl.Execute(out, c)
 }
 
-const tmplText = `
+const tmplText = `package {{.PackN}}
+
 type {{.LinkT}} struct {
 	nodes  [2]{{.TreeT}}
 	height int

@@ -19,11 +19,10 @@ func TestIntsBasic(t *testing.T) {
 func BenchmarkKV1Mlinear(b *testing.B) {
 	const sz = 1000000
 
-	b.ReportAllocs()
-
 	tr := ikvt{}
 	b.Run("insert", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
+			b.ReportAllocs()
 			tr = ikvt{} // drop the whole tree each time
 			for i := 0; i < sz; i++ {
 				tr.insert(&iKV{k: i, v: i * 3})
@@ -34,6 +33,7 @@ func BenchmarkKV1Mlinear(b *testing.B) {
 	// we have one tree left
 	b.Run("lookup", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
+			b.ReportAllocs()
 			for i := 0; i < sz; i++ {
 				kv := tr.lookup(&iKV{k: i})
 				if kv.v != i*3 {
@@ -47,11 +47,9 @@ func BenchmarkKV1Mlinear(b *testing.B) {
 
 func BenchmarkMap1Mlinear(b *testing.B) {
 	const sz = 1000000
-
-	b.ReportAllocs()
-
 	tr := map[int]int{}
 	b.Run("insert", func(b *testing.B) {
+		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
 			tr = map[int]int{} // drop the whole map each time
 			for i := 0; i < sz; i++ {
@@ -62,6 +60,7 @@ func BenchmarkMap1Mlinear(b *testing.B) {
 	})
 	// we have one tree left
 	b.Run("lookup", func(b *testing.B) {
+		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
 			for i := 0; i < sz; i++ {
 				v := tr[i]

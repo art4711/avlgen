@@ -31,7 +31,7 @@ func TestIntsLookupVal(t *testing.T) {
 	}
 }
 
-func BenchmarkKV1Mlinear(b *testing.B) {
+func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 
 	tr := ikvt{}
@@ -72,7 +72,7 @@ func BenchmarkKV1Mlinear(b *testing.B) {
 	})
 }
 
-func BenchmarkMap1Mlinear(b *testing.B) {
+func BenchmarkMapII1Mlinear(b *testing.B) {
 	const sz = 1000000
 	tr := map[int]int{}
 	b.Run("insert", func(b *testing.B) {

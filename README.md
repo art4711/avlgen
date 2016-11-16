@@ -15,7 +15,7 @@ instead.
 
 In short you need something like this in `anyfile.go`:
 
-    //go:generate go run <figure out path later>/cmd/avlgen/main.go -- anyfile.go
+    //go:generate go run <figure out path later>/cmd/avlgen/main.go .
     type anyStruct struct {
         anyFieldName anyTypeName `avlgen:"nameOfTreeType"`
     }
@@ -24,20 +24,39 @@ In short you need something like this in `anyfile.go`:
         return a.Equals(b), a.Less(b)
     }
 
-Running `go generate` will create `anyfile_trees.go` that contains the
-implementation of the type `nameOfTreeType` which is an avl tree of
-those structs order by the `cmp` function.
+Running `go generate` will create `<package name>_trees.go` that
+contains the implementation of the type `nameOfTreeType` which is an
+avl tree of those structs order by the `cmp` function. This will be
+applied to all files in the package so you have have as many trees
+as you'd like for the same package.
 
-I should figure out the cmp function better so that we can actually
-have the same struct in multiple trees. Soon.
-
-`anyFieldName anyTypeName` is the linkage we need into the tree.
+`anyFieldName anyTypeName` is the linkage we need into the tree. This
+is the part that embeds the data structure into your structure.
 
 The two interesting functions that will be generated will be
 `(*nameOfTreeType).insert` and `(*nameOfTreeType).lookup` (delete,
-search and a few special ones coming soon). The functions aren't
+search and a few special ones coming soon). The functions/type aren't
 exported on purpose. If you want to export them, wrap the generated
-structs or bug me and I'll add a flag.
+struct or bug me and I'll add a flag.
+
+## the struct tag
+
+The tag can contain other configuration for the generated code.
+Currently this is possible:
+
+    `avlgen:"name,cmp:cmpfun,cmpval:cmpvalfun(int)"`
+
+This will generate the tree type `name` using `cmpfun` as the standard
+compare function and `cmvalfun(int)` as a special optimized lookup compare
+function. The default name for `cmp` is a function named `cmp`.
+
+If `cmpval` is specified it is just like the compare function, but
+instead of taking a node struct pointer as an argument, you can pass a
+key type directly. Removing the necessity of creating a fake struct
+for the lookup funciton. The type of the argument is whatever is
+inside the parentheses in the tag. The generator will then generate a
+`(*nameOfTreeType).lookupVal(<key type>)` function that can be used to
+more efficiently look up values in the tree.
 
 ## Wait, what?
 
@@ -145,4 +164,6 @@ I did a quick benchmark of inserting a million int,int pairs into the
 AVL tree (one of the ints is the key) and compared it to map[int]int.
 The results are pretty meaningless (because of btoi and because of
 different use cases), but AVL trees are 35% slower at insertions and
-24% faster at lookups.
+30% faster at lookups. Comparing a struct with string,string pair to a
+map[string]string shows marginally faster (within 5%) insert speed for
+insertions and around 20% slower lookup speed.

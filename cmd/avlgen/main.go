@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -48,11 +49,11 @@ func main() {
 			}
 			ts, err := strconv.Unquote(f.Tag.Value)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 			tag := reflect.StructTag(ts)
-			tv := tag.Get("avlgen")
-			if tv == "" {
+			tv, ok := tag.Lookup("avlgen")
+			if !ok {
 				continue
 			}
 			fType, ok := f.Type.(*ast.Ident)
@@ -62,7 +63,11 @@ func main() {
 			if len(f.Names) != 1 {
 				panic("Make my life easier, give the struct field one name and one name only, please.")
 			}
-			confs = append(confs, avlgen.New(typ.Name.Name, fType.Name, f.Names[0].Name, tv, packN, first))
+			c, err := avlgen.New(typ.Name.Name, fType.Name, f.Names[0].Name, "", packN, first, tv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			confs = append(confs, c)
 			first = false
 		}
 		return true

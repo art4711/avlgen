@@ -13,9 +13,9 @@ func (a *iV) cmp(b *iV) (bool, bool) {
 
 type iKV struct {
 	k, v int
-	tl   tl `avlgen:"ikvt"`
+	tl   tl `avlgen:"ikvt,cmp:cmpiv"`
 }
 
-func (a *iKV) cmp(b *iKV) (bool, bool) {
+func (a *iKV) cmpiv(b *iKV) (bool, bool) {
 	return a.k == b.k, a.k < b.k
 }

@@ -1,7 +1,9 @@
 package avlgen
 
 import (
+	"fmt"
 	"io"
+	"strings"
 	"text/template"
 )
 
@@ -18,6 +20,7 @@ type Conf struct {
 	// Name of the node member that is our link.
 	LinkN string
 	// How to compare two nodes...
+	CmpF string
 }
 
 var tmpl *template.Template
@@ -30,8 +33,43 @@ func init() {
 	tmpl = t
 }
 
-func New(nodeT, linkT, linkN, treeT, packN string, first bool) *Conf {
-	return &Conf{first, packN, linkT, treeT, nodeT, linkN}
+func (c *Conf) parseTag(tag string) error {
+	s := strings.Split(tag, ",")
+	// The first element is always the name of the tree type.
+	c.TreeT = s[0]
+	s = s[1:]
+	// The rest of the elements are split key:value pairs
+	for i := range s {
+		kv := strings.SplitN(s[i], ":", 2)
+		if len(kv) != 2 {
+			return fmt.Errorf("invalid tag format, needs to be '<key>:<value>'")
+		}
+		k, v := kv[0], kv[1]
+		switch k {
+		case "cmp":
+			c.CmpF = v
+		}
+	}
+	return nil
+}
+
+func New(nodeT, linkT, linkN, treeT, packN string, first bool, tag string) (*Conf, error) {
+	c := &Conf{
+		First: first,
+		PackN: packN,
+		LinkT: linkT,
+		TreeT: treeT,
+		NodeT: nodeT,
+		LinkN: linkN,
+		CmpF:  "cmp",
+	}
+	if tag != "" {
+		err := c.parseTag(tag)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }
 
 func (c *Conf) Gen(out io.Writer) error {
@@ -121,7 +159,7 @@ func (p *{{.TreeT}}) insert(x *{{.NodeT}}) {
 		p.n = x
 		return
 	}
-	_, less := x.cmp(p.n)
+	_, less := x.{{.CmpF}}(p.n)
 
 	/*
 	 * We need to decide how to handle equality.
@@ -142,7 +180,7 @@ func (a *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	n := a.n
 
 	for n != nil {
-		eq, less := x.cmp(n)
+		eq, less := x.{{.CmpF}}(n)
 		if eq {
 			break
 		}

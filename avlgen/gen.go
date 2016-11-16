@@ -3,6 +3,7 @@ package avlgen
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"text/template"
 )
@@ -21,6 +22,9 @@ type Conf struct {
 	LinkN string
 	// How to compare two nodes...
 	CmpF string
+	// Compare node to value.
+	CmpVal     string
+	CmpValType string
 }
 
 var tmpl *template.Template
@@ -42,12 +46,19 @@ func (c *Conf) parseTag(tag string) error {
 	for i := range s {
 		kv := strings.SplitN(s[i], ":", 2)
 		if len(kv) != 2 {
-			return fmt.Errorf("invalid tag format, needs to be '<key>:<value>'")
+			return fmt.Errorf("invalid tag format, expected '<key>:<value>', got '%s'", s[i])
 		}
 		k, v := kv[0], kv[1]
 		switch k {
 		case "cmp":
 			c.CmpF = v
+		case "cmpval":
+			m := regexp.MustCompile("(.*)\\((.*)\\)").FindStringSubmatch(v)
+			if len(m) != 3 {
+				return fmt.Errorf("invalid cmpval, expected 'cmpval:<fn>(<type>)', got 'cmpval:%s'", v)
+			}
+			c.CmpVal = m[1]
+			c.CmpValType = m[2]
 		}
 	}
 	return nil
@@ -188,6 +199,21 @@ func (a *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	}
 	return n
 }
+{{if .CmpVal}}
+
+func (a *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
+	n := a.n
+	for n != nil {
+		eq, more := n.{{.CmpVal}}(x)
+		if eq {
+			break
+		}
+		// notice that the compare order is reversed to how lookup does, so less is more.
+		n = n.{{.LinkN}}.nodes[btoi(!more)].n
+	}
+	return n
+}
+{{end}}
 
 func (p *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
 	if p.n == nil {

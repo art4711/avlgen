@@ -1,6 +1,6 @@
 package trees
 
-//go:generate go run ../cmd/avlgen/main.go -- inttree.go
+//go:generate go run ../cmd/avlgen/main.go .
 
 type iV struct {
 	v     int

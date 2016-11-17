@@ -44,23 +44,25 @@ happy to be proven wrong.
 I suspect this is because AVL trees are always shallower than RB
 trees. So the extra cost of more rebalancing is paid off, with
 interest, by using less cache. 20 years ago memory writes were
-probably expensive, today cache is king. Also. The code for AVL trees
-is trivial. Especially the brutally optimized version I have here. In
-C it's almost branchless (can't be branchless, but it's as close as we
-can get). Why?  Because instead of copying `left` and `right` from
-textbooks we have an array with two elements and we index it with
-booleans. That removes most branches. And allows us to replace 4
-rotation functions with one that's branchless. Branches matter on
-modern CPUs. A lot. All this is a lie in this implementation because
-`btoi` ruins everything in Go.
+probably expensive, today cache is king.
+
+Also. The code for AVL trees is trivial. Especially the brutally
+optimized version I have here. In C it's almost branchless (can't be
+branchless, but it's as close as we can get). Why?  Because instead of
+copying `left` and `right` from textbooks we have an array with two
+elements and we index it with booleans. That removes most
+branches. And allows us to replace 4 rotation functions with one
+that's branchless. Branches matter on modern CPUs. A lot. All this is
+a lie in this implementation because `btoi` ruins everything in Go.
 
 ## wtf is `btoi`?
 
-Unfortunately, everything I said in the last paragraph only applies to
-this implementation if it's compiled with a good C compiler. The Go
-compiler is comically bad at generating good code here. I agree that
-the language shouldn't define numerical values for booleans, but in
-return the compiler should understand how to optimize this:
+Unfortunately, everything I said in the previous paragraph only
+applies to this implementation if it's compiled with a good C
+compiler. The Go compiler is comically bad at generating good code
+here. I agree that the language shouldn't define numerical values for
+booleans, but in return the compiler should understand how to optimize
+this:
 
     var arr [2]*Foo
     var b bool

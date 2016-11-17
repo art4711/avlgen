@@ -25,6 +25,8 @@ type Conf struct {
 	// Compare node to value.
 	CmpVal     string
 	CmpValType string
+	// Generate foreach
+	Foreach bool
 }
 
 func (c *Conf) parseTag(tag string) error {
@@ -35,20 +37,28 @@ func (c *Conf) parseTag(tag string) error {
 	// The rest of the elements are split key:value pairs
 	for i := range s {
 		kv := strings.SplitN(s[i], ":", 2)
-		if len(kv) != 2 {
-			return fmt.Errorf("invalid tag format, expected '<key>:<value>', got '%s'", s[i])
-		}
-		k, v := kv[0], kv[1]
-		switch k {
-		case "cmp":
-			c.CmpF = v
-		case "cmpval":
-			m := regexp.MustCompile("(.*)\\((.*)\\)").FindStringSubmatch(v)
-			if len(m) != 3 {
-				return fmt.Errorf("invalid cmpval, expected 'cmpval:<fn>(<type>)', got 'cmpval:%s'", v)
+		if len(kv) == 1 {
+			switch kv[0] {
+			case "foreach":
+				c.Foreach = true
+			default:
+				return fmt.Errorf("unknown tag value: %s", s[i])
 			}
-			c.CmpVal = m[1]
-			c.CmpValType = m[2]
+		} else {
+			k, v := kv[0], kv[1]
+			switch k {
+			case "cmp":
+				c.CmpF = v
+			case "cmpval":
+				m := regexp.MustCompile("(.*)\\((.*)\\)").FindStringSubmatch(v)
+				if len(m) != 3 {
+					return fmt.Errorf("invalid cmpval, expected 'cmpval:<fn>(<type>)', got 'cmpval:%s'", v)
+				}
+				c.CmpVal = m[1]
+				c.CmpValType = m[2]
+			default:
+				return fmt.Errorf("unknown tag value: %s", s[i])
+			}
 		}
 	}
 	return nil
@@ -232,7 +242,6 @@ func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	return n
 }
 {{if .CmpVal}}
-
 func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
@@ -246,7 +255,7 @@ func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	return n
 }
 {{end}}
-
+{{if .Foreach}}
 func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
 	if tr.n == nil {
 		return
@@ -263,4 +272,5 @@ func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
 		a(tr.n)
 	}
 }
+{{end}}
 `))

@@ -139,6 +139,8 @@ func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {
 	})
 }
 
+var outFname = flag.String("o", "", "output file name")
+
 func main() {
 	flag.Parse()
 	if flag.NArg() != 1 {
@@ -161,15 +163,18 @@ func main() {
 	for _, fname := range pkg.TestGoFiles {
 		parseFile(fs, fname, trees)
 	}
-	n := strings.TrimSuffix(pkg.Name, ".go") + "_trees.go"
-	out, err := os.OpenFile(n, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	outName := strings.TrimSuffix(pkg.Name, ".go") + "_trees.go"
+	if *outFname != "" {
+		outName = *outFname
+	}
+	out, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		log.Fatalf("open(%s): %v", n, err)
+		log.Fatalf("open(%s): %v", outName, err)
 	}
 	defer out.Close()
 	err = trees.Gen(out)
 	if err != nil {
-		os.Remove(n)
+		os.Remove(outName)
 		log.Fatalf("gen: %v\n", err)
 	}
 }

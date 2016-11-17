@@ -13,7 +13,7 @@ func (a *iV) cmp(b *iV) (bool, bool) {
 
 type iKV struct {
 	k, v int
-	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),foreach"`
+	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug"`
 }
 
 func (a *iKV) cmpiv(b *iKV) (bool, bool) {

@@ -50,6 +50,9 @@ func TestIntsDel(t *testing.T) {
 		if n.v%2 == 0 || n.v%3 == 0 {
 			t.Errorf("%d not deleted", n.v)
 		}
+		if err := tr.check(n); err != nil {
+			t.Error(err)
+		}
 		c++
 	})
 	if c != 33333 {

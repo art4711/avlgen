@@ -1,3 +1,84 @@
+// Avlgen is a tool to automatically generate code for embedded AVL
+// trees in structs. The purpose is to be able to store structs in an
+// ordered tree without any additional memory allocation. All the
+// data needed to store a struct in the tree is part of the struct.
+//
+// Avlgen is invoked on a package directory, examines the package and
+// finds structs with fields that contain a special tag and generates
+// the necessary code for those structs in the same package.
+//
+// For example:
+//
+//	package foo
+//
+//	//go:generate avlgen .
+//	type str struct {
+//		key string
+//		tl  tlink `avlgen:"strTree"`
+//	}
+//
+//	func (a *str)cmp(b *str) (bool, bool) {
+//		return a.key == b.key, a.key < b.key
+//	}
+//
+// This will generate a file called "foo_trees.go" with the type
+// "strTree", and some access methods. You can now manage str structs
+// like this:
+//
+//	st := strTree{}
+//	st.insert(&str{ key: "foobar" })
+//	s := st.lookup(&str{ key: "foobar" })
+//	st.delete(s)
+//
+// The "tlink" part is a type name of the type that avlgen will
+// generate and must be unique for each tree, but otherwise can be any
+// string. The same goes for its name in the struct. This is the part
+// that embeds the tree in the struct.
+//
+// This is the simplest possible tree and is already relatively useful
+// especially since the struct "str" can contain any data. Of course, things
+// can be improved with some configuration. Insert, lookup and delete won't
+// perform any memory allocations.
+//
+// The default comparison function is a receiver of the type of the tree
+// elements called "cmp". We can change its name by just adding a bit more
+// information to the tag:
+//
+//	type str struct {
+//		key string
+//		tl tlink `avlgen:"strTree,cmp:cmpKeys"`
+//	}
+//
+// Now we expect there to be a "cmpKeys" function instead of
+// "cmp". The compare function returns two booleans: if the two values
+// are equal or if the first value is "less" than the other
+// value. You're free to define "less" in whatever way you wish as
+// long as it is transitive (if a > b and b > c then a > c).
+//
+// The next useful feature is obvious from the above "lookup"
+// example. It's quite wasteful to allocate a fake struct to perform
+// lookups just because our compare function only understands how to
+// compare two elements.
+//
+//	type str struct {
+//		key string
+//		tl tlink `avlgen:"strTree,cmpval:cmpk(string)"`
+//	}
+//	func (a *str)cmpk(b string) (bool, bool) {
+//		return a.key == b, a.key < b
+//	}
+//
+// This allows us to generate a special lookup function
+// (*strTree)lookupVal(string):
+//
+//	s := lookupVal("foobar")
+//
+// The type (string in this case) can be anything, of course. It's
+// specified in the tag and the code is generated correctly for any
+// key types (it shouldn't be too hard to add multiple arguments to
+// the cmpk/lookupVal functions in case of more complex keys, but this
+// isn't implemented yet).
+//
 package main
 
 import (

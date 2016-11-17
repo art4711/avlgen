@@ -84,6 +84,33 @@ func TestIntsDel(t *testing.T) {
 	}
 }
 
+func TestIntsDelVal(t *testing.T) {
+	tr := ikvt{}
+
+	for i := 0; i < 100000; i++ {
+		tr.insert(&iKV{k: i, v: i})
+	}
+	for i := 99998; i >= 0; i -= 2 {
+		tr.deleteVal(i)
+	}
+	for i := 99999; i >= 0; i -= 6 {
+		tr.deleteVal(i)
+	}
+	c := 0
+	tr.foreach(nil, nil, func(n *iKV) {
+		if n.v%2 == 0 || n.v%3 == 0 {
+			t.Errorf("%d not deleted", n.v)
+		}
+		if err := tr.check(n); err != nil {
+			t.Error(err)
+		}
+		c++
+	})
+	if c != 33333 {
+		t.Errorf("wrong number left: %d", c)
+	}
+}
+
 func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 
@@ -128,6 +155,15 @@ func BenchmarkII1Mlinear(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < sz; i++ {
 				tr.delete(tr.lookupVal(i))
+			}
+			b.SetBytes(sz)
+		}
+	})
+	b.Run("deleteVal", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			b.ReportAllocs()
+			for i := 0; i < sz; i++ {
+				tr.deleteVal(i)
 			}
 			b.SetBytes(sz)
 		}

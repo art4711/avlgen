@@ -282,6 +282,39 @@ func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	}
 	return n
 }
+
+func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
+	/*
+	 * We silently ignore deletions of elements that are
+	 * not in the tree. The options here are to return
+	 * something or panic or do nothing. All three equally
+	 * valid.
+	 */
+	if tr.n == nil {
+		return
+	}
+
+	eq, more := tr.n.{{.CmpVal}}(x)
+	if eq {
+		if tr.n.{{.LinkN}}.nodes[0].n == nil {
+			tr.n = tr.n.{{.LinkN}}.nodes[1].n
+		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
+			tr.n = tr.n.{{.LinkN}}.nodes[0].n
+		} else {
+			r := tr.n.{{.LinkN}}.nodes[0].n
+			for r.{{.LinkN}}.nodes[1].n != nil {
+				r = r.{{.LinkN}}.nodes[1].n
+			}
+			tr.n.{{.LinkN}}.nodes[0].delete(r)
+			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
+			tr.n = r
+			tr.reheight()
+		}
+	} else {
+		tr.n.{{.LinkN}}.nodes[btoi(!more)].deleteVal(x)
+		tr.rebalance()
+	}
+}
 {{end}}
 {{if .Foreach}}
 func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {

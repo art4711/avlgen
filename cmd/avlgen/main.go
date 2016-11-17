@@ -58,7 +58,7 @@
 // The next useful feature is obvious from the above "lookup"
 // example. It's quite wasteful to allocate a fake struct to perform
 // lookups just because our compare function only understands how to
-// compare two elements.
+// compare two element structs.
 //
 //	type str struct {
 //		key string
@@ -68,16 +68,20 @@
 //		return a.key == b, a.key < b
 //	}
 //
-// This allows us to generate a special lookup function
-// (*strTree)lookupVal(string):
+// This allows us to generate a special functions
+// (*strTree)lookupVal(string) and (*strTree)deleteVal(string):
 //
 //	s := lookupVal("foobar")
+//	tr.deleteVal("foobar")
 //
 // The type (string in this case) can be anything, of course. It's
 // specified in the tag and the code is generated correctly for any
 // key types (it shouldn't be too hard to add multiple arguments to
 // the cmpk/lookupVal functions in case of more complex keys, but this
 // isn't implemented yet).
+//
+// There is obviously no "insertVal" function since it is expected
+// that structs are much more complex than this example.
 //
 package main
 

@@ -8,7 +8,7 @@ import (
 	"text/template"
 )
 
-type trees struct {
+type Trees struct {
 	trees []*conf
 	// Name of the package.
 	Pkg     string
@@ -72,11 +72,11 @@ func (c *conf) parseTag(tag string) error {
 	return nil
 }
 
-func New(pkg string) *trees {
-	return &trees{Pkg: pkg, Imports: make(map[string]string)}
+func New(pkg string) *Trees {
+	return &Trees{Pkg: pkg, Imports: make(map[string]string)}
 }
 
-func (t *trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
+func (t *Trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
 	c := &conf{
 		LinkT: linkT,
 		TreeT: treeT,
@@ -97,7 +97,7 @@ func (t *trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
 	return nil
 }
 
-func (t *trees) Gen(out io.Writer) error {
+func (t *Trees) Gen(out io.Writer) error {
 	err := prologueTmpl.Execute(out, t)
 	if err != nil {
 		return err

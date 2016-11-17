@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot process directory '%s': %v", dname, err)
 	}
-	confs := []*avlgen.Conf{}
+	trees := avlgen.New(pkg.Name)
 	first := true
 	for _, fname := range pkg.GoFiles {
 		f, err := parser.ParseFile(fs, fname, nil, 0)
@@ -67,11 +67,10 @@ func main() {
 				if len(f.Names) != 1 {
 					panic("Make my life easier, give the struct field one name and one name only, please.")
 				}
-				c, err := avlgen.New(typ.Name.Name, fType.Name, f.Names[0].Name, "", pkg.Name, first, tv)
+				err = trees.AddTree(typ.Name.Name, fType.Name, f.Names[0].Name, "", tv)
 				if err != nil {
 					log.Fatal(err)
 				}
-				confs = append(confs, c)
 				first = false
 			}
 			return true
@@ -84,11 +83,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer out.Close()
-	for _, c := range confs {
-		err = c.Gen(out)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "gen: %v\n", err)
-			os.Exit(1)
-		}
+	err = trees.Gen(out)
+	if err != nil {
+		os.Remove(n)
+		fmt.Fprintf(os.Stderr, "gen: %v\n", err)
+		os.Exit(1)
 	}
 }

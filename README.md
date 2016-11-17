@@ -13,56 +13,11 @@ instead.
 
 ## How?
 
-In short you need something like this in `anyfile.go`:
-
-    //go:generate go run <figure out path later>/cmd/avlgen/main.go .
-    type anyStruct struct {
-        anyFieldName anyTypeName `avlgen:"nameOfTreeType"`
-    }
-
-    func (a *anyStruct)cmp(b *anyStruct) (bool, bool) {
-        return a.Equals(b), a.Less(b)
-    }
-
-Running `go generate` will create `<package name>_trees.go` that
-contains the implementation of the type `nameOfTreeType` which is an
-avl tree of those structs order by the `cmp` function. This will be
-applied to all files in the package so you have have as many trees
-as you'd like for the same package.
-
-`anyFieldName anyTypeName` is the linkage we need into the tree. This
-is the part that embeds the data structure into your structure.
-
-The two interesting functions that will be generated will be
-`(*nameOfTreeType).insert` and `(*nameOfTreeType).lookup` (delete,
-search and a few special ones coming soon). The functions/type aren't
-exported on purpose. If you want to export them, wrap the generated
-struct or bug me and I'll add a flag.
-
-## the struct tag
-
-The tag can contain other configuration for the generated code.
-Currently this is possible:
-
-    `avlgen:"name,cmp:cmpfun,cmpval:cmpvalfun(int)"`
-
-This will generate the tree type `name` using `cmpfun` as the standard
-compare function and `cmvalfun(int)` as a special optimized lookup compare
-function. The default name for `cmp` is a function named `cmp`.
-
-If `cmpval` is specified it is just like the compare function, but
-instead of taking a node struct pointer as an argument, you can pass a
-key type directly. Removing the necessity of creating a fake struct
-for the lookup funciton. The type of the argument is whatever is
-inside the parentheses in the tag. The generator will then generate a
-`(*nameOfTreeType).lookupVal(<key type>)` function that can be used to
-more efficiently look up values in the tree.
+Read the [documentation](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen).
 
 ## Wait, what?
 
-Just `cd tests; go generate && go test .` and read the generated
-code. I don't want to document too much since everything will change
-soon, this is the scaffolding I need to actually work on this code.
+Just `cd tests; go generate && go test .` and read the generated file.
 
 ## Is this really useful?
 
@@ -91,14 +46,15 @@ trees. So the extra cost of more rebalancing is paid off, with
 interest, by using less cache. 20 years ago memory writes were
 probably expensive, today cache is king. Also. The code for AVL trees
 is trivial. Especially the brutally optimized version I have here. In
-C it's almost branchless (can't be branchless, but it's close). Why?
-Because instead of copying `left` and `right` from textbooks we have
-an array with two elements and we index it with booleans. That removes
-most branches. And allows us to replace 4 rotation functions with one
-that's branchless. Branches matter on modern CPUs. A lot. All this is
-a lie in this implementation because `btoi` ruins everything in Go.
+C it's almost branchless (can't be branchless, but it's as close as we
+can get). Why?  Because instead of copying `left` and `right` from
+textbooks we have an array with two elements and we index it with
+booleans. That removes most branches. And allows us to replace 4
+rotation functions with one that's branchless. Branches matter on
+modern CPUs. A lot. All this is a lie in this implementation because
+`btoi` ruins everything in Go.
 
-## wtf is btoi?
+## wtf is `btoi`?
 
 Unfortunately, everything I said in the last paragraph only applies to
 this implementation if it's compiled with a good C compiler. The Go
@@ -166,12 +122,14 @@ boolean to int.
 ## Benchmarketing
 
 I did a quick benchmark of inserting a million int,int pairs into the
-AVL tree (one of the ints is the key) and compared it to map[int]int.
-The results are pretty meaningless (because of btoi and because of
-different use cases), but AVL trees are 35% slower at insertions and
-30% faster at lookups. Comparing a struct with string,string pair to a
-map[string]string shows marginally faster (within 5%) insert speed for
-insertions and around 20% slower lookup speed.
+AVL tree (one of the ints is the key) and compared it to
+`map[int]int`.  The results are pretty meaningless (because of `btoi`
+and because of different use cases), but AVL trees are 35% slower at
+insertions, 30% faster at lookups and within the margin of error same
+for deletes (4% faster). Comparing a struct with string,string pair to
+a `map[string]string` shows marginally faster (within 5%) insert speed
+for insertions and around 20% slower lookup speed.
 
 The big win here is that the tree allocates approximately half the
-memory in all tested cases.
+memory of map in all tested cases. And it's ordered. Which is funny
+since I haven't implemented the ordered iterators yet.

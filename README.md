@@ -1,4 +1,4 @@
-# avl trees
+# avl trees [![godoc reference](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen?status.png)](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen)
 
 Who needs templates when you have go generate.
 
@@ -84,7 +84,7 @@ about mongodb being webscale.
 
 I have not seen any benchmark in the past 10-15 years where a good
 implementation of AVL isn't the same or faster than RB. None. I'm
-happy to be proved wrong.
+happy to be proven wrong.
 
 I suspect this is because AVL trees are always shallower than RB
 trees. So the extra cost of more rebalancing is paid off, with
@@ -92,9 +92,9 @@ interest, by using less cache. 20 years ago memory writes were
 probably expensive, today cache is king. Also. The code for AVL trees
 is trivial. Especially the brutally optimized version I have here. In
 C it's almost branchless (can't be branchless, but it's close). Why?
-Because instead of having `left` and `right` we have an array with two
-elements and we index it with booleans. That removes most
-branches. And allows us to replace 4 rotation functions with one
+Because instead of copying `left` and `right` from textbooks we have
+an array with two elements and we index it with booleans. That removes
+most branches. And allows us to replace 4 rotation functions with one
 that's branchless. Branches matter on modern CPUs. A lot. All this is
 a lie in this implementation because `btoi` ruins everything in Go.
 
@@ -157,6 +157,11 @@ Let's do three branches instead of three instructions.
 I still haven't found a way to fix this. There is a mention in an
 issue that the compiler in tip (1.8?) should be able to deal with
 this better: https://github.com/golang/go/issues/6011#issuecomment-254303032
+
+Update: I managed to remove the bounds check by doing a useless `& 1`
+in a few strategic places, replacing a branch with one useless
+instruction, but we still get the expensive branch for converting the
+boolean to int.
 
 ## Benchmarketing
 

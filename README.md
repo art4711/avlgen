@@ -167,3 +167,6 @@ different use cases), but AVL trees are 35% slower at insertions and
 30% faster at lookups. Comparing a struct with string,string pair to a
 map[string]string shows marginally faster (within 5%) insert speed for
 insertions and around 20% slower lookup speed.
+
+The big win here is that the tree allocates approximately half the
+memory in all tested cases.

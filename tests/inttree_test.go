@@ -96,6 +96,15 @@ func BenchmarkII1Mlinear(b *testing.B) {
 			b.SetBytes(sz)
 		}
 	})
+	b.Run("delete", func(b *testing.B) {
+		for bn := 0; bn < b.N; bn++ {
+			b.ReportAllocs()
+			for i := 0; i < sz; i++ {
+				tr.delete(tr.lookupVal(i))
+			}
+			b.SetBytes(sz)
+		}
+	})
 }
 
 func BenchmarkMapII1Mlinear(b *testing.B) {
@@ -111,7 +120,7 @@ func BenchmarkMapII1Mlinear(b *testing.B) {
 			b.SetBytes(sz)
 		}
 	})
-	// we have one tree left
+	// we have one map left
 	b.Run("lookup", func(b *testing.B) {
 		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
@@ -120,6 +129,15 @@ func BenchmarkMapII1Mlinear(b *testing.B) {
 				if v != i*3 {
 					b.Fatal("bad value %v\n", v)
 				}
+			}
+			b.SetBytes(sz)
+		}
+	})
+	b.Run("delete", func(b *testing.B) {
+		b.ReportAllocs()
+		for bn := 0; bn < b.N; bn++ {
+			for i := 0; i < sz; i++ {
+				delete(tr, i)
 			}
 			b.SetBytes(sz)
 		}

@@ -31,6 +31,32 @@ func TestIntsLookupVal(t *testing.T) {
 	}
 }
 
+func TestIntsDel(t *testing.T) {
+	tr := ikvt{}
+
+	for i := 0; i < 100000; i++ {
+		tr.insert(&iKV{k: i, v: i})
+	}
+	for i := 99998; i >= 0; i -= 2 {
+		n := tr.lookupVal(i)
+		tr.delete(n)
+	}
+	for i := 99999; i >= 0; i -= 6 {
+		n := tr.lookupVal(i)
+		tr.delete(n)
+	}
+	c := 0
+	tr.foreach(nil, nil, func(n *iKV) {
+		if n.v%2 == 0 || n.v%3 == 0 {
+			t.Errorf("%d not deleted", n.v)
+		}
+		c++
+	})
+	if c != 33333 {
+		t.Errorf("wrong number left: %d", c)
+	}
+}
+
 func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 

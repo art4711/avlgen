@@ -178,7 +178,9 @@ func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {
 	 * We need to decide how to handle equality.
 	 *
 	 * Four options:
-	 * 1. Silently assume it doesn't happen, just insert duplicate elements. (current option)
+	 * 1. Silently assume it doesn't happen, just insert
+	 *    duplicate elements. It's your foot and your
+	 *    trigger. (current choice)
 	 * 2. Silently ignore and don't insert.
 	 * 3. Refuse to insert, return boolean for success.
 	 * 4. Replace, return old element.
@@ -187,6 +189,39 @@ func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {
 	 */
 	tr.n.{{.LinkN}}.nodes[btoi(less)].insert(x)
 	tr.rebalance()
+}
+
+func (tr *{{.TreeT}}) delete(x *{{.NodeT}}) {
+	/*
+	 * We silently ignore deletions of elements that are
+	 * not in the tree. The options here are to return
+	 * something or panic or do nothing. All three equally
+	 * valid.
+	 */
+	if tr.n == nil {
+		return
+	}
+
+	if tr.n == x {
+		if tr.n.{{.LinkN}}.nodes[0].n == nil {
+			tr.n = tr.n.{{.LinkN}}.nodes[1].n
+		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
+			tr.n = tr.n.{{.LinkN}}.nodes[0].n
+		} else {
+			r := tr.n.{{.LinkN}}.nodes[0].n
+			for r.{{.LinkN}}.nodes[1].n != nil {
+				r = r.{{.LinkN}}.nodes[1].n
+			}
+			tr.n.{{.LinkN}}.nodes[0].delete(r)
+			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
+			tr.n = r
+			tr.reheight()
+		}
+	} else {
+		_, less := x.{{.CmpF}}(tr.n)
+		tr.n.{{.LinkN}}.nodes[btoi(less)].delete(x)
+		tr.rebalance()
+	}
 }
 
 func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {

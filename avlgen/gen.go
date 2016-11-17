@@ -104,7 +104,10 @@ func btoi(a bool) int {
 	if a {
 		x = 1
 	}
-	return x
+	// By performing this '& 1' we add one useless instruction but
+	// we eliminate the bounds check which is a branch.
+	// Yes, it is worth it.
+	return x & 1
 }
 {{end}}
 
@@ -140,8 +143,10 @@ func (tr *{{.TreeT}}) balance() int {
 
 func (tr *{{.TreeT}}) rotate(d int) {
 	n := tr.n
-	pivot := n.{{.LinkN}}.nodes[d^1].n
-	n.{{.LinkN}}.nodes[d^1].n = pivot.{{.LinkN}}.nodes[d].n
+	d &= 1			// Remind the compiler that d is 0 or 1 to eliminate bounds checks
+	notd := (d ^ 1) & 1
+	pivot := n.{{.LinkN}}.nodes[notd].n
+	n.{{.LinkN}}.nodes[notd].n = pivot.{{.LinkN}}.nodes[d].n
 	pivot.{{.LinkN}}.nodes[d].n = n
 	pivot.{{.LinkN}}.nodes[d].reheight()
 	tr.n = pivot
@@ -161,7 +166,7 @@ func (tr *{{.TreeT}}) rebalance() {
 	if (bl && bd >= 0) || (br && bd <= 0) {
 		n.{{.LinkN}}.nodes[d].rotate(d)
 	}
-	tr.rotate(d ^ 1)
+	tr.rotate((d^1)&1)
 }
 
 func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {

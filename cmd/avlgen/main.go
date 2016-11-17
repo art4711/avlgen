@@ -18,8 +18,7 @@ import (
 func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {
 	f, err := parser.ParseFile(fs, fname, nil, 0)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ParseFile: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("parser.ParseFile(%s): %v", fname, err)
 	}
 	ast.Inspect(f, func(n ast.Node) bool {
 		typ, ok := n.(*ast.TypeSpec)
@@ -36,7 +35,7 @@ func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {
 			}
 			ts, err := strconv.Unquote(f.Tag.Value)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("unquote: %v", err)
 			}
 			tag := reflect.StructTag(ts)
 			tv, ok := tag.Lookup("avlgen")
@@ -45,10 +44,10 @@ func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {
 			}
 			fType, ok := f.Type.(*ast.Ident)
 			if !ok {
-				panic("I understand nothing")
+				log.Fatalf("Apparently things aren't as simple as I understand them: %v", f.Type)
 			}
 			if len(f.Names) != 1 {
-				panic("Make my life easier, give the struct field one name and one name only, please.")
+				log.Fatalf("%s embed field name problem: %v", typ.Name.Name, f.Names)
 			}
 			err = trees.AddTree(typ.Name.Name, fType.Name, f.Names[0].Name, "", tv)
 			if err != nil {
@@ -62,7 +61,7 @@ func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {
 func main() {
 	flag.Parse()
 	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: avlgen <infile.go>\n")
+		fmt.Fprintf(os.Stderr, "Usage: avlgen <package dir>\n")
 		flag.PrintDefaults()
 		os.Exit(1)
 
@@ -84,14 +83,12 @@ func main() {
 	n := strings.TrimSuffix(pkg.Name, ".go") + "_trees.go"
 	out, err := os.OpenFile(n, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "open: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("open(%s): %v", n, err)
 	}
 	defer out.Close()
 	err = trees.Gen(out)
 	if err != nil {
 		os.Remove(n)
-		fmt.Fprintf(os.Stderr, "gen: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("gen: %v\n", err)
 	}
 }

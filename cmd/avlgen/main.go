@@ -68,7 +68,7 @@
 //		return a.key == b, a.key < b
 //	}
 //
-// This allows us to generate a special functions
+// This allows us to generate special functions
 // (*strTree)lookupVal(string) and (*strTree)deleteVal(string):
 //
 //	s := lookupVal("foobar")

@@ -32,6 +32,8 @@ type conf struct {
 	// Optional functions to generate
 	Foreach bool
 	Check   bool
+	// Name of the iterator type.
+	IterT string
 }
 
 func (c *conf) parseTag(tag string) error {
@@ -49,6 +51,8 @@ func (c *conf) parseTag(tag string) error {
 			case "debug":
 				c.Foreach = true
 				c.Check = true
+			case "iter":
+				c.IterT = c.TreeT + "Iter"
 			default:
 				return fmt.Errorf("unknown tag value: %s", s[i])
 			}
@@ -362,6 +366,114 @@ func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
 		tr.rebalance()
 	}
 }
+{{if .IterT}}
+type {{.IterT}} struct {
+	// First and last elements of the iterator
+	start, end *{{.NodeT}}
+	// Should start and end elements be included in the iteration?
+	incs, ince bool
+	// The path we took to reach the previous element.
+	path []*{{.TreeT}}
+}
+
+// start, end - start and end values of iteration.
+// openStart,openEnd - ignore start/end and start/end the iteration at the edge of the tree.
+// incs, ince - include the start/end value in the iteration.
+func (tr *{{.TreeT}}) iter(start, end {{.CmpValType}}, openStart, openEnd, incs, ince bool) *{{.IterT}} {
+	it := &{{.IterT}}{ incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height()) }
+	if !openStart {
+		it.start = tr.searchValLEQ(start)
+		if eq, _ := it.start.{{.CmpVal}}(start); !eq {
+			// If we got a value less than start,
+			// force incs to false since we don't
+			// want to include it.
+			it.incs = false
+		}
+		// This should be done instead of the searchLEQ, but keep
+		// things simple for now.
+		t := tr
+		for {
+			it.path = append(it.path, t)
+			eq, less := it.start.{{.CmpF}}(t.n)
+			if eq {
+				break
+			}
+			t = &t.n.{{.LinkN}}.nodes[btoi(less)]
+		}
+	} else {
+		it.diveLeft(tr)
+	}
+	if !openEnd {
+		it.end = tr.searchValGEQ(end)
+		if eq, _ := it.end.{{.CmpVal}}(end); !eq {
+			// If we got a value greater than end,
+			// force ince to false since we don't
+			// want to include it.
+			it.ince = false
+		}
+	} else {
+		t := tr
+		for t.n != nil {
+			it.end = t.n	// lazy
+			t = &t.n.{{.LinkN}}.nodes[0]
+		}
+	}
+	return it
+}
+
+// Helper function, don't use.
+func (it *{{.IterT}}) diveLeft(t *{{.TreeT}}) {
+	for t.n != nil {
+		it.path = append(it.path, t)
+		it.start = t.n	// lazy, should just be done once.
+		t = &t.n.{{.LinkN}}.nodes[1]
+	}
+}
+
+func (it *{{.IterT}}) value() *{{.NodeT}} {
+	return it.start
+}
+
+// XXX - this function is a mess. We need to rearrange the conditionals
+//       so that the code makes sense.
+func (it *{{.IterT}}) next() bool {
+	// incs can only be set for the first element of the iterator,
+	// if it is, we just don't move to the next element.
+	if it.incs {
+		it.incs = false
+	} else if it.start != it.end {
+		/*
+		 * Last returned element is it.start
+		 * We got it through t := it.path[len(it.path)-1].
+		 * if t has a tree to the right, the next element
+		 * is the leftmost element of the right tree.
+		 * If it doesn't, the next element is the one parent
+		 * we have that's bigger than us.
+		 */
+		if it.start.{{.LinkN}}.nodes[0].n != nil {
+			it.diveLeft(&it.start.{{.LinkN}}.nodes[0])
+		} else {
+			for {
+				it.path = it.path[:len(it.path)-1]
+				_, less := it.start.{{.CmpF}}(it.path[len(it.path)-1].n)
+				if less {
+					break
+				}
+			}
+			it.start = it.path[len(it.path)-1].n
+		}
+	}
+	if it.start != it.end {
+		return true
+	} else if it.ince {
+		it.ince = false
+		return it.end != nil	// can happen with empty iterator.
+	} else {
+		return false
+	}
+}
+
+{{end}}
 {{end}}
 {{if .Foreach}}
 func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {

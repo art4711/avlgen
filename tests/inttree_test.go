@@ -150,6 +150,44 @@ func TestIntsSearchLEQ(t *testing.T) {
 	}
 }
 
+type iv struct {
+	v   int
+	ivl ivl `avlgen:"ivt,cmpval:cmpk(int),iter"`
+}
+
+func (a *iv) cmp(b *iv) (bool, bool) {
+	return a.v == b.v, a.v < b.v
+}
+
+func (a *iv) cmpk(b int) (bool, bool) {
+	return a.v == b, a.v < b
+}
+
+func TestIntsIter(t *testing.T) {
+	tr := ivt{}
+
+	for i := 0; i < 1000; i++ {
+		tr.insert(&iv{v: i})
+	}
+	t.Run("all", func(t *testing.T) {
+		it := tr.iter(0, 0, true, true, true, true)
+		i := 0
+		for it.next() {
+			v := it.value().v
+			if i != v {
+				t.Errorf("%d != %d", v, i)
+			}
+			if i == 1000 {
+				t.Fatalf("too much")
+			}
+			i++
+		}
+		if i != 1000 {
+			t.Errorf("too few iterations: %d != 1000", i)
+		}
+	})
+}
+
 func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 

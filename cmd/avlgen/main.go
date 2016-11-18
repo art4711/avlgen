@@ -165,16 +165,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot process directory '%s': %v", dname, err)
 	}
+
+	outName := strings.TrimSuffix(pkg.Name, ".go") + "_trees.go"
+	if *outFname != "" {
+		outName = *outFname
+	}
+
 	trees := avlgen.New(pkg.Name)
 	for _, fname := range pkg.GoFiles {
+		if fname == outName {
+			continue // Skip the generated file (mostly for my testing)
+		}
 		parseFile(fs, fname, trees)
 	}
 	for _, fname := range pkg.TestGoFiles {
 		parseFile(fs, fname, trees)
-	}
-	outName := strings.TrimSuffix(pkg.Name, ".go") + "_trees.go"
-	if *outFname != "" {
-		outName = *outFname
 	}
 	out, err := os.OpenFile(outName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {

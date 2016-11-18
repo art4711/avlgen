@@ -68,8 +68,8 @@
 //		return a.key == b, a.key < b
 //	}
 //
-// This allows us to generate special functions
-// (*strTree)lookupVal(string) and (*strTree)deleteVal(string):
+// This allows us to generate special functions lookupVal and
+// deleteVal:
 //
 //	s := lookupVal("foobar")
 //	tr.deleteVal("foobar")
@@ -82,6 +82,11 @@
 //
 // There is obviously no "insertVal" function since it is expected
 // that structs are much more complex than this example.
+//
+// When `cmpval` is specified we also implement two more functions:
+// searchValLEQ and searchValGEQ. They behave like lookup, but in case
+// there's no equal element, they return the nearest less than (LEQ)
+// or greater than (GEQ) node.
 //
 package main
 

@@ -111,6 +111,45 @@ func TestIntsDelVal(t *testing.T) {
 	}
 }
 
+func TestIntsSearchGEQ(t *testing.T) {
+	tr := ikvt{}
+
+	for i := 0; i < 100000; i += 5 {
+		tr.insert(&iKV{k: i, v: i})
+	}
+	// There is no 100k
+	for i := 0; i < 99996; i++ {
+		n := tr.searchValGEQ(i)
+
+		expect := ((i + 4) / 5) * 5
+		if n == nil {
+			t.Fatalf("nil n %d", i)
+		}
+		if n.v != expect {
+			t.Errorf("%d %d != %d", i, expect, n.v)
+		}
+	}
+}
+
+func TestIntsSearchLEQ(t *testing.T) {
+	tr := ikvt{}
+
+	for i := 0; i < 100000; i += 5 {
+		tr.insert(&iKV{k: i, v: i})
+	}
+	for i := 0; i < 100000; i++ {
+		n := tr.searchValLEQ(i)
+
+		expect := (i / 5) * 5
+		if n == nil {
+			t.Fatalf("nil n %d", i)
+		}
+		if n.v != expect {
+			t.Errorf("%d %d != %d", i, expect, n.v)
+		}
+	}
+}
+
 func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 

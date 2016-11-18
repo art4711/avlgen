@@ -269,18 +269,65 @@ func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	}
 	return n
 }
+
 {{if .CmpVal}}
 func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
+		// notice that the compare order is reversed to how lookup does, so less is more.
 		eq, more := n.{{.CmpVal}}(x)
 		if eq {
 			break
 		}
-		// notice that the compare order is reversed to how lookup does, so less is more.
 		n = n.{{.LinkN}}.nodes[btoi(!more)].n
 	}
 	return n
+}
+
+// Find nearest value greater than or equal to x
+func (tr *{{.TreeT}})searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
+	// Empty tree can't match.
+	if tr.n == nil {
+		return nil
+	}
+	eq, more := tr.n.{{.CmpVal}}(x)
+	if eq {
+		return tr.n
+	}
+	if !more {
+		l := tr.n.{{.LinkN}}.nodes[1].searchValGEQ(x)
+		if l != nil {
+			_, less := l.{{.CmpF}}(tr.n)
+			if less {
+				return l
+			}
+		}
+		return tr.n
+	}
+	return tr.n.{{.LinkN}}.nodes[0].searchValGEQ(x)
+}
+
+// Find nearest value less than or equal to x
+func (tr *{{.TreeT}})searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
+	// Empty tree can't match.
+	if tr.n == nil {
+		return nil
+	}
+	eq, more := tr.n.{{.CmpVal}}(x)
+	if eq {
+		return tr.n
+	}
+	if more {
+		l := tr.n.{{.LinkN}}.nodes[0].searchValLEQ(x)
+		if l != nil {
+			_, less := l.{{.CmpF}}(tr.n)
+			if !less {
+				return l
+			}
+		}
+		return tr.n
+	}
+	return tr.n.{{.LinkN}}.nodes[1].searchValLEQ(x)
 }
 
 func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {

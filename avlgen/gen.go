@@ -440,14 +440,14 @@ func (it *{{.IterT}}) value() *{{.NodeT}} {
 	return it.start
 }
 
-// XXX - this function is a mess. We need to rearrange the conditionals
-//       so that the code makes sense.
 func (it *{{.IterT}}) next() bool {
-	// incs can only be set for the first element of the iterator,
-	// if it is, we just don't move to the next element.
-	if it.incs {
-		it.incs = false
-	} else if it.start != it.end {
+	if it.start != it.end {
+		// incs can only be set for the first element of the iterator,
+		// if it is, we just don't move to the next element.
+		if it.incs {
+			it.incs = false
+			return true
+		}
 		/*
 		 * Last returned element is it.start
 		 * We got it through t := it.path[len(it.path)-1].
@@ -455,6 +455,12 @@ func (it *{{.IterT}}) next() bool {
 		 * is the leftmost element of the right tree.
 		 * If it doesn't, the next element is the one parent
 		 * we have that's bigger than us.
+		 *
+		 * N.B. 0 = right, 1 = left.
+		 *
+		 * We don't check for underflow of path. If that
+		 * happens something is already seriously wrong,
+		 * crashing is the best option.
 		 */
 		if it.start.{{.LinkN}}.nodes[0].n != nil {
 			it.diveLeft(&it.start.{{.LinkN}}.nodes[0])

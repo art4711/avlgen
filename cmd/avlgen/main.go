@@ -26,9 +26,16 @@
 // like this:
 //
 //	st := strTree{}
-//	st.insert(&str{ key: "foobar" })
-//	s := st.lookup(&str{ key: "foobar" })
+//	st.insert(&str{ key: "a" })
+//	st.insert(&str{ key: "b" })
+//	s := st.lookup(&str{ key: "c" })
 //	st.delete(s)
+//	if st.first().key != "a" {
+//		panic("a")
+//	}
+//	if st.last().key != "b" {
+//		panic("b")
+//	}
 //
 // The "tlink" part is a type name of the type that avlgen will
 // generate and must be unique for each tree, but otherwise can be any
@@ -83,10 +90,55 @@
 // There is obviously no "insertVal" function since it is expected
 // that structs are much more complex than this example.
 //
-// When `cmpval` is specified we also implement two more functions:
+// When "cmpval" is specified we also implement two more functions:
 // searchValLEQ and searchValGEQ. They behave like lookup, but in case
 // there's no equal element, they return the nearest less than (LEQ)
 // or greater than (GEQ) node.
+//
+// Finally, the big point of trees is that they are ordered, but this
+// is useless unless we can actually see the elements in order. The
+// previously mentioned "first" and "last" functions will only get us
+// so far. We add iterators by adding "iter" to the tag:
+//
+//	type str struct {
+//		key string
+//		tl tlink `avlgen:"strTree,iter"`
+//	}
+//
+// A new function becomes generated now:
+//
+//     (*strTree).iter(start,end *str, incs, ince bool) *strTreeIter
+//
+// "start" and "end" specify on which nodes the iteration should start
+// and end. "incs" and "ince" specify if the start and respectively
+// end nodes should be included in the iteration (even though it's not
+// strictly necessary to provide all functionality, it makes life much
+// easier in certain situations and it is trivial to implement). If
+// "start" or "end" are nil the iteration starts/end at the first/last
+// element in the tree.
+//
+// The iterator then can be used like this:
+//
+//	it := tr.iter(nil, nil, true, true)
+//	for it.next() {
+//		n := it.value()
+//		something(n)
+//	}
+//
+// The iterator will automatically detect if the start element is
+// bigger than the end element and will perform the iteration
+// backwards.
+//
+// If the tree has the "cmpval" function specified, we also get a
+// convenience function:
+//
+//	(*<tree type>).iterVal(start,end <cmpval type>, edgeStart, edgeEnd, incs, ince bool) *<iter type>
+//
+// This will create an iterator over all elements where "start >= el"
+// and "el <= end". "incs" and "ince" change the operators to ">" and
+// "<" respectively. "edgeStart" and "edgeEnd" tell the function to
+// ignore the start/end arguments and start/end at the edge of the
+// tree.
 //
 package main
 

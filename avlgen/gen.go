@@ -418,6 +418,12 @@ func (tr *{{.TreeT}}) iter(start, end {{.CmpValType}}, openStart, openEnd, incs,
 			t = &t.n.{{.LinkN}}.nodes[0]
 		}
 	}
+	// Explicitly handle start == end.
+	if it.start == it.end && it.incs != it.ince {
+		// one false means both false
+		it.incs = false
+		it.ince = false
+	}
 	return it
 }
 

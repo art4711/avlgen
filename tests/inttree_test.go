@@ -163,6 +163,20 @@ func (a *iv) cmpk(b int) (bool, bool) {
 	return a.v == b, a.v < b
 }
 
+func tIntIter(t *testing.T, first, last int, it *ivtIter) {
+	i := first
+	for it.next() {
+		v := it.value().v
+		if i != v {
+			t.Errorf("%d != %d", v, i)
+		}
+		i++
+	}
+	if i-1 != last {
+		t.Errorf("wrong last %d != %d", i-1, last)
+	}
+}
+
 func TestIntsIter(t *testing.T) {
 	tr := ivt{}
 
@@ -170,21 +184,35 @@ func TestIntsIter(t *testing.T) {
 		tr.insert(&iv{v: i})
 	}
 	t.Run("all", func(t *testing.T) {
-		it := tr.iter(0, 0, true, true, true, true)
-		i := 0
-		for it.next() {
-			v := it.value().v
-			if i != v {
-				t.Errorf("%d != %d", v, i)
-			}
-			if i == 1000 {
-				t.Fatalf("too much")
-			}
-			i++
-		}
-		if i != 1000 {
-			t.Errorf("too few iterations: %d != 1000", i)
-		}
+		tIntIter(t, 0, 999, tr.iter(0, 0, true, true, true, true))
+	})
+	t.Run("all-explicit", func(t *testing.T) {
+		tIntIter(t, 0, 999, tr.iter(0, 999, false, false, true, true))
+	})
+	t.Run("just-one-start", func(t *testing.T) {
+		tIntIter(t, 0, 0, tr.iter(0, 0, false, false, true, true))
+	})
+	t.Run("just-one-start-no-ince", func(t *testing.T) {
+		tIntIter(t, 0, -1, tr.iter(0, 0, false, false, true, false))
+	})
+	t.Run("just-one-start-no-incs", func(t *testing.T) {
+		tIntIter(t, 0, -1, tr.iter(0, 0, false, false, false, true))
+	})
+	mid := tr.n.v
+	t.Run("start-to-mid", func(t *testing.T) {
+		tIntIter(t, 0, mid, tr.iter(0, mid, true, false, true, true))
+	})
+	t.Run("mid-to-end", func(t *testing.T) {
+		tIntIter(t, mid, 999, tr.iter(mid, 0, false, true, true, true))
+	})
+	t.Run("just-mid", func(t *testing.T) {
+		tIntIter(t, mid, mid, tr.iter(mid-1, mid+1, false, false, false, false))
+	})
+	t.Run("mid-and-neighbours", func(t *testing.T) {
+		tIntIter(t, mid-1, mid+1, tr.iter(mid-1, mid+1, false, false, true, true))
+	})
+	t.Run("arbitrary-range", func(t *testing.T) {
+		tIntIter(t, 17, 41, tr.iter(17, 42, false, false, true, false))
 	})
 }
 

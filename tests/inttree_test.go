@@ -164,16 +164,20 @@ func (a *iv) cmpk(b int) (bool, bool) {
 }
 
 func tIntIter(t *testing.T, first, last int, it *ivtIter) {
+	inc := 1
+	if first > last && last != -1 {
+		inc = -1
+	}
 	i := first
 	for it.next() {
 		v := it.value().v
 		if i != v {
 			t.Errorf("%d != %d", v, i)
 		}
-		i++
+		i += inc
 	}
-	if i-1 != last {
-		t.Errorf("wrong last %d != %d", i-1, last)
+	if i-inc != last {
+		t.Errorf("wrong last %d != %d (%d)", i-inc, last, inc)
 	}
 }
 
@@ -219,6 +223,9 @@ func TestIntsIter(t *testing.T) {
 	})
 	t.Run("other-constructor", func(t *testing.T) {
 		tIntIter(t, 0, 999, tr.iter(tr.first(), tr.last(), true, true))
+	})
+	t.Run("reverse", func(t *testing.T) {
+		tIntIter(t, 999, 0, tr.iter(tr.last(), tr.first(), true, true))
 	})
 }
 

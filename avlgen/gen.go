@@ -274,6 +274,20 @@ func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	return n
 }
 
+func (tr *{{.TreeT}}) last() (ret *{{.NodeT}}) {
+	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[0].n {
+		ret = n
+	}
+	return
+}
+
+func (tr *{{.TreeT}}) first() (ret *{{.NodeT}}) {
+	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[1].n {
+		ret = n
+	}
+	return
+}
+
 {{if .CmpVal}}
 func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
@@ -372,23 +386,9 @@ type {{.IterT}} struct {
 	// First and last elements of the iterator
 	start, end *{{.NodeT}}
 	// Should start and end elements be included in the iteration?
-	incs, ince bool
+	incs, ince, rev bool
 	// The path we took to reach the previous element.
 	path []*{{.TreeT}}
-}
-
-func (tr *{{.TreeT}}) last() (ret *{{.NodeT}}) {
-	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[0].n {
-		ret = n
-	}
-	return
-}
-
-func (tr *{{.TreeT}}) first() (ret *{{.NodeT}}) {
-	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[1].n {
-		ret = n
-	}
-	return
 }
 
 func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} {
@@ -396,7 +396,7 @@ func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} 
 	if start != nil {
 		it.findStartPath(tr)
 	} else {
-		it.diveLeft(tr)
+		it.diveDown(tr)
 	}
 	if end == nil {
 		it.end = tr.last()
@@ -407,6 +407,8 @@ func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} 
 		it.incs = false
 		it.ince = false
 	}
+	eq, less := it.start.{{.CmpF}}(it.end)
+	it.rev = !less && !eq
 	return it
 }
 {{if .CmpVal}}
@@ -438,11 +440,11 @@ func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, in
 {{end}}
 
 // Helper function, don't use.
-func (it *{{.IterT}}) diveLeft(t *{{.TreeT}}) {
+func (it *{{.IterT}}) diveDown(t *{{.TreeT}}) {
 	for t.n != nil {
 		it.path = append(it.path, t)
 		it.start = t.n	// lazy, should just be done once.
-		t = &t.n.{{.LinkN}}.nodes[1]
+		t = &t.n.{{.LinkN}}.nodes[btoi(!it.rev)]
 	}
 }
 
@@ -471,6 +473,9 @@ func (it *{{.IterT}}) next() bool {
 			return true
 		}
 		/*
+		 * right - towards the end of iteration (0 in forward iteration)
+		 * left - towards beginning of the iteration (1 in forward iteration)
+		 *
 		 * Last returned element is it.start
 		 * We got it through t := it.path[len(it.path)-1].
 		 * if t has a tree to the right, the next element
@@ -478,19 +483,17 @@ func (it *{{.IterT}}) next() bool {
 		 * If it doesn't, the next element is the one parent
 		 * we have that's bigger than us.
 		 *
-		 * N.B. 0 = right, 1 = left.
-		 *
 		 * We don't check for underflow of path. If that
 		 * happens something is already seriously wrong,
 		 * crashing is the best option.
 		 */
-		if it.start.{{.LinkN}}.nodes[0].n != nil {
-			it.diveLeft(&it.start.{{.LinkN}}.nodes[0])
+		if it.start.{{.LinkN}}.nodes[btoi(it.rev)].n != nil {
+			it.diveDown(&it.start.{{.LinkN}}.nodes[btoi(it.rev)])
 		} else {
 			for {
 				it.path = it.path[:len(it.path)-1]
 				_, less := it.start.{{.CmpF}}(it.path[len(it.path)-1].n)
-				if less {
+				if less != it.rev {
 					break
 				}
 			}

@@ -184,35 +184,41 @@ func TestIntsIter(t *testing.T) {
 		tr.insert(&iv{v: i})
 	}
 	t.Run("all", func(t *testing.T) {
-		tIntIter(t, 0, 999, tr.iter(0, 0, true, true, true, true))
+		tIntIter(t, 0, 999, tr.iterVal(0, 0, true, true, true, true))
 	})
 	t.Run("all-explicit", func(t *testing.T) {
-		tIntIter(t, 0, 999, tr.iter(0, 999, false, false, true, true))
+		tIntIter(t, 0, 999, tr.iterVal(0, 999, false, false, true, true))
 	})
 	t.Run("just-one-start", func(t *testing.T) {
-		tIntIter(t, 0, 0, tr.iter(0, 0, false, false, true, true))
+		tIntIter(t, 0, 0, tr.iterVal(0, 0, false, false, true, true))
 	})
 	t.Run("just-one-start-no-ince", func(t *testing.T) {
-		tIntIter(t, 0, -1, tr.iter(0, 0, false, false, true, false))
+		tIntIter(t, 0, -1, tr.iterVal(0, 0, false, false, true, false))
 	})
 	t.Run("just-one-start-no-incs", func(t *testing.T) {
-		tIntIter(t, 0, -1, tr.iter(0, 0, false, false, false, true))
+		tIntIter(t, 0, -1, tr.iterVal(0, 0, false, false, false, true))
 	})
 	mid := tr.n.v
 	t.Run("start-to-mid", func(t *testing.T) {
-		tIntIter(t, 0, mid, tr.iter(0, mid, true, false, true, true))
+		tIntIter(t, 0, mid, tr.iterVal(0, mid, true, false, true, true))
 	})
 	t.Run("mid-to-end", func(t *testing.T) {
-		tIntIter(t, mid, 999, tr.iter(mid, 0, false, true, true, true))
+		tIntIter(t, mid, 999, tr.iterVal(mid, 0, false, true, true, true))
 	})
 	t.Run("just-mid", func(t *testing.T) {
-		tIntIter(t, mid, mid, tr.iter(mid-1, mid+1, false, false, false, false))
+		tIntIter(t, mid, mid, tr.iterVal(mid-1, mid+1, false, false, false, false))
 	})
 	t.Run("mid-and-neighbours", func(t *testing.T) {
-		tIntIter(t, mid-1, mid+1, tr.iter(mid-1, mid+1, false, false, true, true))
+		tIntIter(t, mid-1, mid+1, tr.iterVal(mid-1, mid+1, false, false, true, true))
 	})
 	t.Run("arbitrary-range", func(t *testing.T) {
-		tIntIter(t, 17, 41, tr.iter(17, 42, false, false, true, false))
+		tIntIter(t, 17, 41, tr.iterVal(17, 42, false, false, true, false))
+	})
+	t.Run("other-constructor", func(t *testing.T) {
+		tIntIter(t, 0, 999, tr.iter(nil, nil, true, true))
+	})
+	t.Run("other-constructor", func(t *testing.T) {
+		tIntIter(t, 0, 999, tr.iter(tr.first(), tr.last(), true, true))
 	})
 }
 

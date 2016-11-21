@@ -366,6 +366,7 @@ func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
 		tr.rebalance()
 	}
 }
+{{end}}
 {{if .IterT}}
 type {{.IterT}} struct {
 	// First and last elements of the iterator
@@ -376,47 +377,29 @@ type {{.IterT}} struct {
 	path []*{{.TreeT}}
 }
 
-// start, end - start and end values of iteration.
-// openStart,openEnd - ignore start/end and start/end the iteration at the edge of the tree.
-// incs, ince - include the start/end value in the iteration.
-func (tr *{{.TreeT}}) iter(start, end {{.CmpValType}}, openStart, openEnd, incs, ince bool) *{{.IterT}} {
-	it := &{{.IterT}}{ incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height()) }
-	if !openStart {
-		it.start = tr.searchValLEQ(start)
-		if eq, _ := it.start.{{.CmpVal}}(start); !eq {
-			// If we got a value less than start,
-			// force incs to false since we don't
-			// want to include it.
-			it.incs = false
-		}
-		// This should be done instead of the searchLEQ, but keep
-		// things simple for now.
-		t := tr
-		for {
-			it.path = append(it.path, t)
-			eq, less := it.start.{{.CmpF}}(t.n)
-			if eq {
-				break
-			}
-			t = &t.n.{{.LinkN}}.nodes[btoi(less)]
-		}
+func (tr *{{.TreeT}}) last() (ret *{{.NodeT}}) {
+	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[0].n {
+		ret = n
+	}
+	return
+}
+
+func (tr *{{.TreeT}}) first() (ret *{{.NodeT}}) {
+	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[1].n {
+		ret = n
+	}
+	return
+}
+
+func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} {
+	it := &{{.IterT}}{ start: start, end: end, incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height()) }
+	if start != nil {
+		it.findStartPath(tr)
 	} else {
 		it.diveLeft(tr)
 	}
-	if !openEnd {
-		it.end = tr.searchValGEQ(end)
-		if eq, _ := it.end.{{.CmpVal}}(end); !eq {
-			// If we got a value greater than end,
-			// force ince to false since we don't
-			// want to include it.
-			it.ince = false
-		}
-	} else {
-		t := tr
-		for t.n != nil {
-			it.end = t.n	// lazy
-			t = &t.n.{{.LinkN}}.nodes[0]
-		}
+	if end == nil {
+		it.end = tr.last()
 	}
 	// Explicitly handle start == end.
 	if it.start == it.end && it.incs != it.ince {
@@ -426,6 +409,33 @@ func (tr *{{.TreeT}}) iter(start, end {{.CmpValType}}, openStart, openEnd, incs,
 	}
 	return it
 }
+{{if .CmpVal}}
+// start, end - start and end values of iteration.
+// edgeStart,edgeEnd - ignore start/end and start/end the iteration at the edge of the tree.
+// incs, ince - include the start/end value in the iteration.
+func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, incs, ince bool) *{{.IterT}} {
+	var s, e *{{.NodeT}}
+	if !edgeStart {
+		s = tr.searchValLEQ(start)
+		if eq, _ := s.{{.CmpVal}}(start); !eq {
+			// If we got a value less than start,
+			// force incs to false since we don't
+			// want to include it.
+			incs = false
+		}
+	}
+	if !edgeEnd {
+		e = tr.searchValGEQ(end)
+		if eq, _ := e.{{.CmpVal}}(end); !eq {
+			// If we got a value greater than end,
+			// force ince to false since we don't
+			// want to include it.
+			ince = false
+		}
+	}
+	return tr.iter(s, e, incs, ince)
+}
+{{end}}
 
 // Helper function, don't use.
 func (it *{{.IterT}}) diveLeft(t *{{.TreeT}}) {
@@ -433,6 +443,18 @@ func (it *{{.IterT}}) diveLeft(t *{{.TreeT}}) {
 		it.path = append(it.path, t)
 		it.start = t.n	// lazy, should just be done once.
 		t = &t.n.{{.LinkN}}.nodes[1]
+	}
+}
+
+// Helper function, don't use.
+func (it *{{.IterT}}) findStartPath(t *{{.TreeT}}) {
+	for {
+		it.path = append(it.path, t)
+		eq, less := it.start.{{.CmpF}}(t.n)
+		if eq {
+			break
+		}
+		t = &t.n.{{.LinkN}}.nodes[btoi(less)]
 	}
 }
 
@@ -485,7 +507,6 @@ func (it *{{.IterT}}) next() bool {
 	}
 }
 
-{{end}}
 {{end}}
 {{if .Foreach}}
 func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {

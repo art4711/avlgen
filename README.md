@@ -1,15 +1,14 @@
 # avl trees [![godoc reference](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen?status.png)](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen)
 
-Who needs templates when you have go generate.
+Who needs generics when you have go generate.
 
 ## What?
 
-This is a Go implementation of an inline (some people call it embedded)
-AVL tree very heavily based on [my C implementation](https://github.com/art4711/stuff/tree/master/avl).
+This is a Go implementation of an embedded/inline AVL tree very
+heavily based on [my C implementation](https://github.com/art4711/stuff/tree/master/avl).
 
-Since we don't have templates and there's no pre-processor and we
-can't commit pointer atrocities we `go generate` the necessary code
-instead.
+Since we don't have generics and there's no pre-processor and we can't
+commit pointer atrocities we `go generate` the necessary code instead.
 
 ## How?
 
@@ -38,22 +37,23 @@ is repeated just as often and as mindlessly as in that famous video
 about mongodb being webscale.
 
 I have not seen any benchmark in the past 10-15 years where a good
-implementation of AVL isn't the same or faster than RB. None. I'm
-happy to be proven wrong.
+implementation of AVL doesn't perform the same or faster than RB.
+None. I'm happy to be proven wrong.
 
 I suspect this is because AVL trees are always shallower than RB
 trees. So the extra cost of more rebalancing is paid off, with
-interest, by using less cache. 20 years ago memory writes were
-probably expensive, today cache is king.
+interest, by using less cache. 20 years ago maybe the balance was
+different and instructions heavy to execute, today cache is king.
 
 Also. The code for AVL trees is trivial. Especially the brutally
 optimized version I have here. In C it's almost branchless (can't be
 branchless, but it's as close as we can get). Why?  Because instead of
 copying `left` and `right` from textbooks we have an array with two
 elements and we index it with booleans. That removes most
-branches. And allows us to replace 4 rotation functions with one
-that's branchless. Branches matter on modern CPUs. A lot. All this is
-a lie in this implementation because `btoi` ruins everything in Go.
+branches. And allows us to replace a handful of rotation functions
+with one that's branchless. Branches matter on modern CPUs. A lot. All
+this is a lie in this implementation because `btoi` ruins everything
+in Go.
 
 ## wtf is `btoi`?
 
@@ -127,11 +127,15 @@ I did a quick benchmark of inserting a million int,int pairs into the
 AVL tree (one of the ints is the key) and compared it to
 `map[int]int`.  The results are pretty meaningless (because of `btoi`
 and because of different use cases), but AVL trees are 35% slower at
-insertions, 30% faster at lookups and within the margin of error same
-for deletes (4% faster). Comparing a struct with string,string pair to
-a `map[string]string` shows marginally faster (within 5%) insert speed
-for insertions and around 20% slower lookup speed.
+insertions, 20% faster at lookups and within the margin of error same
+for deletes. Comparing a struct with string,string pair to a
+`map[string]string` shows pretty much the same for insertions and
+around 20% slower lookup speed.
+
+Also, a proper benchmark should replay a reasonable real work load,
+not just count up a few times. Of course maps are slow on insertion
+when the load I put on them is resizing them all the time. (they are
+surprisingly slow on lookup though).
 
 The big win here is that the tree allocates approximately half the
-memory of map in all tested cases. And it's ordered. Which is funny
-since I haven't implemented the ordered iterators yet.
+memory of map in all tested cases. And it's ordered.

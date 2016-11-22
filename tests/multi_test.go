@@ -30,7 +30,7 @@ func TestMultiTree(t *testing.T) {
 	for ix.next() && iy.next() {
 		x := ix.value()
 		y := iy.value()
-		if x.x != y.y {
+		if x != y {
 			t.Errorf("%v != %v", x, y)
 		}
 	}

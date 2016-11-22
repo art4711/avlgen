@@ -4,29 +4,6 @@ import "testing"
 
 //go:generate go run ../cmd/avlgen/main.go .
 
-type iV struct {
-	v     int
-	tlink tLink `avlgen:"iT"`
-}
-
-func (a *iV) cmp(b *iV) (bool, bool) {
-	return a.v == b.v, a.v < b.v
-}
-
-func TestIntsBasic(t *testing.T) {
-	tr := iT{}
-
-	for i := 0; i < 600; i++ {
-		tr.insert(&iV{v: i})
-	}
-	for i := 0; i < 600; i++ {
-		v := tr.lookup(&iV{v: i})
-		if v.v != i {
-			t.Errorf("%v != %v\n", i, v.v)
-		}
-	}
-}
-
 type iKV struct {
 	k, v int
 	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug"`

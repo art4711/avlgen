@@ -71,6 +71,8 @@ func (c *conf) parseTag(tag string) error {
 				}
 				c.CmpVal = m[1]
 				c.CmpValType = m[2]
+			case "no":
+				delete(c.F, v)
 			default:
 				return fmt.Errorf("unknown tag value: %s", s[i])
 			}

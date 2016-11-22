@@ -143,6 +143,13 @@
 // By default all functions to access the tree are unexported, this
 // can be changed by adding "export" to the tag.
 //
+// Generated functions can be disabled (not generated) if you're
+// fighting for a coverage high score. This can be done by adding
+// "no:<func>" to the tag. So for example "no:lookup" won't generate
+// the lookup function. Use on own peril. Some functions are used
+// internally by others and no effort is made to prevent breakage
+// caused by disabling something that is used.
+//
 package main
 
 import (

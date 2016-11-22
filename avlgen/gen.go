@@ -204,6 +204,7 @@ func (tr *{{.TreeT}}) rotate(d int) {
 	n := tr.n
 	d &= 1 // Remind the compiler that d is 0 or 1 to eliminate bounds checks
 	notd := (d ^ 1) & 1
+
 	pivot := n.{{.LinkN}}.nodes[notd].n
 	n.{{.LinkN}}.nodes[notd].n = pivot.{{.LinkN}}.nodes[d].n
 	pivot.{{.LinkN}}.nodes[d].n = n
@@ -213,7 +214,6 @@ func (tr *{{.TreeT}}) rotate(d int) {
 }
 
 func (tr *{{.TreeT}}) rebalance() {
-	n := tr.n
 	tr.reheight()
 	bal := tr.balance()
 	bl, br := bal < -1, bal > 1
@@ -221,11 +221,11 @@ func (tr *{{.TreeT}}) rebalance() {
 		return
 	}
 	d := btoi(bl)
-	bd := n.{{.LinkN}}.nodes[d].balance()
+	bd := tr.n.{{.LinkN}}.nodes[d].balance()
 	if (bl && bd >= 0) || (br && bd <= 0) {
-		n.{{.LinkN}}.nodes[d].rotate(d)
+		tr.n.{{.LinkN}}.nodes[d].rotate(d)
 	}
-	tr.rotate((d ^ 1) & 1)
+	tr.rotate(d ^ 1)
 }
 {{- if .F.insert}}
 
@@ -275,18 +275,16 @@ func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
 		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
 			tr.n = tr.n.{{.LinkN}}.nodes[0].n
 		} else {
-			r := tr.n.{{.LinkN}}.nodes[0].n
-			for r.{{.LinkN}}.nodes[1].n != nil {
-				r = r.{{.LinkN}}.nodes[1].n
-			}
-			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(r)
-			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
-			tr.n = r
-			tr.reheight()
+			next := tr.n.{{.LinkN}}.nodes[0].first()
+			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
+			next.{{.LinkN}} = tr.n.{{.LinkN}}
+			tr.n = next
 		}
 	} else {
 		_, less := x.{{.CmpF}}(tr.n)
 		tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.delete}}(x)
+	}
+	if tr.n != nil {
 		tr.rebalance()
 	}
 }
@@ -410,17 +408,15 @@ func (tr *{{.TreeT}}) {{.F.deleteVal}}(x {{.CmpValType}}) {
 		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
 			tr.n = tr.n.{{.LinkN}}.nodes[0].n
 		} else {
-			r := tr.n.{{.LinkN}}.nodes[0].n
-			for r.{{.LinkN}}.nodes[1].n != nil {
-				r = r.{{.LinkN}}.nodes[1].n
-			}
-			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(r)
-			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
-			tr.n = r
-			tr.reheight()
+			next := tr.n.{{.LinkN}}.nodes[0].first()
+			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
+			next.{{.LinkN}} = tr.n.{{.LinkN}}
+			tr.n = next
 		}
 	} else {
 		tr.n.{{.LinkN}}.nodes[btoi(!more)].{{.F.deleteVal}}(x)
+	}
+	if tr.n != nil {
 		tr.rebalance()
 	}
 }
@@ -601,7 +597,7 @@ func (tr *{{.TreeT}}) {{.F.check}}(n *{{.NodeT}}) error {
 	}
 	balance := lh - rh
 	if balance < -1 || balance > 1 {
-		return fmt.Errorf("bad balance: %d %d %d", nh, rh, lh)
+		return fmt.Errorf("bad balance: %d %d %d, %V", nh, rh, lh, n)
 	}
 	ln := n.{{.LinkN}}.nodes[0].n
 	rn := n.{{.LinkN}}.nodes[1].n

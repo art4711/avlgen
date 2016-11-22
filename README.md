@@ -10,6 +10,22 @@ heavily based on [my C implementation](https://github.com/art4711/stuff/tree/mas
 Since we don't have generics and there's no pre-processor and we can't
 commit pointer atrocities we `go generate` the necessary code instead.
 
+## Why?
+
+I needed something like a map, but ordered. And I don't like my
+data structures slow and inefficient. So I made this.
+
+Embedded data structures have the advantage that they require no
+additional memory allocation on most operations. Everything that's
+needed to keep track of the data is part of the data. This allows an
+implementation with little overhead. Fast, memory efficient and
+self-contained.
+
+A common criticism of embedded data structures is that they lead to
+lifetime management issues. It's easy to forget to remove a struct
+from a list/tree before freeing it. It's not really a problem here
+because garbage collection. We can't get dangling pointers.
+
 ## How?
 
 Read the [documentation](https://godoc.org/github.com/art4711/avlgen/cmd/avlgen).

@@ -153,7 +153,6 @@
 package main
 
 import (
-	"avlgen/avlgen"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -165,6 +164,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/art4711/avlgen/avlgen"
 )
 
 func parseFile(fs *token.FileSet, fname string, trees *avlgen.Trees) {

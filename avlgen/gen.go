@@ -121,7 +121,6 @@ package {{.Pkg}}
 {{range .Imports}}
 import "{{.}}"
 {{end}}
-
 func btoi(a bool) int {
 	// See: https://github.com/golang/go/issues/6011#issuecomment-254303032
 	//
@@ -175,7 +174,7 @@ func (tr *{{.TreeT}}) balance() int {
 
 func (tr *{{.TreeT}}) rotate(d int) {
 	n := tr.n
-	d &= 1			// Remind the compiler that d is 0 or 1 to eliminate bounds checks
+	d &= 1 // Remind the compiler that d is 0 or 1 to eliminate bounds checks
 	notd := (d ^ 1) & 1
 	pivot := n.{{.LinkN}}.nodes[notd].n
 	n.{{.LinkN}}.nodes[notd].n = pivot.{{.LinkN}}.nodes[d].n
@@ -198,7 +197,7 @@ func (tr *{{.TreeT}}) rebalance() {
 	if (bl && bd >= 0) || (br && bd <= 0) {
 		n.{{.LinkN}}.nodes[d].rotate(d)
 	}
-	tr.rotate((d^1)&1)
+	tr.rotate((d ^ 1) & 1)
 }
 
 func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {
@@ -287,9 +286,8 @@ func (tr *{{.TreeT}}) first() (ret *{{.NodeT}}) {
 	}
 	return
 }
-
-{{if .CmpVal}}
-func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
+{{- if .CmpVal}}
+func (tr *{{.TreeT}}) lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
 		// notice that the compare order is reversed to how lookup does, so less is more.
@@ -303,7 +301,7 @@ func (tr *{{.TreeT}})lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 }
 
 // Find nearest value greater than or equal to x
-func (tr *{{.TreeT}})searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
+func (tr *{{.TreeT}}) searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
 	// Empty tree can't match.
 	if tr.n == nil {
 		return nil
@@ -326,7 +324,7 @@ func (tr *{{.TreeT}})searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
 }
 
 // Find nearest value less than or equal to x
-func (tr *{{.TreeT}})searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
+func (tr *{{.TreeT}}) searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
 	// Empty tree can't match.
 	if tr.n == nil {
 		return nil
@@ -380,8 +378,9 @@ func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
 		tr.rebalance()
 	}
 }
-{{end}}
-{{if .IterT}}
+{{- end -}}
+{{- if .IterT}}
+
 type {{.IterT}} struct {
 	// First and last elements of the iterator
 	start, end *{{.NodeT}}
@@ -392,7 +391,7 @@ type {{.IterT}} struct {
 }
 
 func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} {
-	it := &{{.IterT}}{ start: start, end: end, incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height()) }
+	it := &{{.IterT}}{start: start, end: end, incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height())}
 	if start != nil {
 		it.findStartPath(tr)
 	} else {
@@ -411,7 +410,8 @@ func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} 
 	it.rev = !less && !eq
 	return it
 }
-{{if .CmpVal}}
+{{- if .CmpVal }}
+
 // start, end - start and end values of iteration.
 // edgeStart,edgeEnd - ignore start/end and start/end the iteration at the edge of the tree.
 // incs, ince - include the start/end value in the iteration.
@@ -437,13 +437,13 @@ func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, in
 	}
 	return tr.iter(s, e, incs, ince)
 }
-{{end}}
+{{- end}}
 
 // Helper function, don't use.
 func (it *{{.IterT}}) diveDown(t *{{.TreeT}}) {
 	for t.n != nil {
 		it.path = append(it.path, t)
-		it.start = t.n	// lazy, should just be done once.
+		it.start = t.n // lazy, should just be done once.
 		t = &t.n.{{.LinkN}}.nodes[btoi(!it.rev)]
 	}
 }
@@ -504,14 +504,13 @@ func (it *{{.IterT}}) next() bool {
 		return true
 	} else if it.ince {
 		it.ince = false
-		return it.end != nil	// can happen with empty iterator.
+		return it.end != nil // can happen with empty iterator.
 	} else {
 		return false
 	}
 }
-
-{{end}}
-{{if .Foreach}}
+{{- end}}
+{{- if .Foreach}}
 func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
 	if tr.n == nil {
 		return
@@ -528,8 +527,9 @@ func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
 		a(tr.n)
 	}
 }
-{{end}}
-{{if .Check}}
+{{- end}}
+{{- if .Check}}
+
 // This function has a bit wonky prototype, but it's
 // more natural to foreach on nodes and we want to
 // be able to plug this into foreach.
@@ -539,11 +539,11 @@ func (tr *{{.TreeT}}) check(n *{{.NodeT}}) error {
 	nh := n.{{.LinkN}}.height
 	// Verify height invariants
 	if lh > rh {
-		if nh != lh +1 {
+		if nh != lh+1 {
 			return fmt.Errorf("nodes[0].height %d + 1 != n.height %d", lh, nh)
 		}
 	} else {
-		if nh != rh +1 {
+		if nh != rh+1 {
 			return fmt.Errorf("nodes[1] height %d + 1 != n.height %d", rh, nh)
 		}
 	}
@@ -567,5 +567,5 @@ func (tr *{{.TreeT}}) check(n *{{.NodeT}}) error {
 	}
 	return nil
 }
-{{end}}
+{{- end}}
 `))

@@ -95,7 +95,7 @@
 // there's no equal element, they return the nearest less than (LEQ)
 // or greater than (GEQ) node.
 //
-// Finally, the big point of trees is that they are ordered, but this
+// The big selling point of trees is that they are ordered, but this
 // is useless unless we can actually see the elements in order. The
 // previously mentioned "first" and "last" functions will only get us
 // so far. We add iterators by adding "iter" to the tag:
@@ -139,6 +139,9 @@
 // "<" respectively. "edgeStart" and "edgeEnd" tell the function to
 // ignore the start/end arguments and start/end at the edge of the
 // tree.
+//
+// By default all functions to access the tree are unexported, this
+// can be changed by adding "export" to the tag.
 //
 package main
 

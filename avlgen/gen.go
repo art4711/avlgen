@@ -29,11 +29,11 @@ type conf struct {
 	// Compare node to value.
 	CmpVal     string
 	CmpValType string
-	// Optional functions to generate
-	Foreach bool
-	Check   bool
 	// Name of the iterator type.
 	IterT string
+
+	// Generated function names
+	F map[string]string
 }
 
 func (c *conf) parseTag(tag string) error {
@@ -41,18 +41,21 @@ func (c *conf) parseTag(tag string) error {
 	// The first element is always the name of the tree type.
 	c.TreeT = s[0]
 	s = s[1:]
+	export := false
 	// The rest of the elements are split key:value pairs
 	for i := range s {
 		kv := strings.SplitN(s[i], ":", 2)
 		if len(kv) == 1 {
 			switch kv[0] {
 			case "foreach":
-				c.Foreach = true
+				c.F["foreach"] = "foreach"
 			case "debug":
-				c.Foreach = true
-				c.Check = true
+				c.F["foreach"] = "foreach"
+				c.F["check"] = "check"
 			case "iter":
 				c.IterT = c.TreeT + "Iter"
+			case "export":
+				export = true
 			default:
 				return fmt.Errorf("unknown tag value: %s", s[i])
 			}
@@ -73,11 +76,30 @@ func (c *conf) parseTag(tag string) error {
 			}
 		}
 	}
+	if export {
+		for k, v := range c.F {
+			c.F[k] = strings.Title(v)
+		}
+	}
 	return nil
 }
 
 func New(pkg string) *Trees {
 	return &Trees{Pkg: pkg, Imports: make(map[string]string)}
+}
+
+var defaultFuncs = map[string]string{
+	"insert":       "insert",
+	"delete":       "delete",
+	"lookup":       "lookup",
+	"last":         "last",
+	"first":        "first",
+	"lookupVal":    "lookupVal",
+	"searchValGEQ": "searchValGEQ",
+	"searchValLEQ": "searchValLEQ",
+	"deleteVal":    "deleteVal",
+	"iter":         "iter",
+	"iterVal":      "iterVal",
 }
 
 func (t *Trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
@@ -87,6 +109,10 @@ func (t *Trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
 		NodeT: nodeT,
 		LinkN: linkN,
 		CmpF:  "cmp",
+		F:     make(map[string]string),
+	}
+	for k, v := range defaultFuncs {
+		c.F[k] = v
 	}
 	if tag != "" {
 		err := c.parseTag(tag)
@@ -94,7 +120,7 @@ func (t *Trees) AddTree(nodeT, linkT, linkN, treeT, tag string) error {
 			return err
 		}
 	}
-	if c.Check {
+	if c.F["check"] != "" {
 		t.Imports["fmt"] = "fmt"
 	}
 	t.trees = append(t.trees, c)
@@ -199,8 +225,9 @@ func (tr *{{.TreeT}}) rebalance() {
 	}
 	tr.rotate((d ^ 1) & 1)
 }
+{{- if .F.insert}}
 
-func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {
+func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
 	if tr.n == nil {
 		x.{{.LinkN}}.nodes[0].n = nil
 		x.{{.LinkN}}.nodes[1].n = nil
@@ -223,11 +250,13 @@ func (tr *{{.TreeT}}) insert(x *{{.NodeT}}) {
 	 *
 	 * The _ in the statement above is for equality.
 	 */
-	tr.n.{{.LinkN}}.nodes[btoi(less)].insert(x)
+	tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.insert}}(x)
 	tr.rebalance()
 }
+{{- end -}}
+{{- if .F.delete}}
 
-func (tr *{{.TreeT}}) delete(x *{{.NodeT}}) {
+func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
 	/*
 	 * We silently ignore deletions of elements that are
 	 * not in the tree. The options here are to return
@@ -248,19 +277,21 @@ func (tr *{{.TreeT}}) delete(x *{{.NodeT}}) {
 			for r.{{.LinkN}}.nodes[1].n != nil {
 				r = r.{{.LinkN}}.nodes[1].n
 			}
-			tr.n.{{.LinkN}}.nodes[0].delete(r)
+			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(r)
 			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
 			tr.n = r
 			tr.reheight()
 		}
 	} else {
 		_, less := x.{{.CmpF}}(tr.n)
-		tr.n.{{.LinkN}}.nodes[btoi(less)].delete(x)
+		tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.delete}}(x)
 		tr.rebalance()
 	}
 }
+{{- end -}}
+{{- if .F.lookup}}
 
-func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
+func (tr *{{.TreeT}}) {{.F.lookup}}(x *{{.NodeT}}) *{{.NodeT}} {
 	n := tr.n
 
 	for n != nil {
@@ -272,22 +303,29 @@ func (tr *{{.TreeT}}) lookup(x *{{.NodeT}}) *{{.NodeT}} {
 	}
 	return n
 }
+{{- end -}}
+{{- if .F.last}}
 
-func (tr *{{.TreeT}}) last() (ret *{{.NodeT}}) {
+func (tr *{{.TreeT}}) {{.F.last}}() (ret *{{.NodeT}}) {
 	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[0].n {
 		ret = n
 	}
 	return
 }
+{{- end -}}
+{{- if .F.first}}
 
-func (tr *{{.TreeT}}) first() (ret *{{.NodeT}}) {
+func (tr *{{.TreeT}}) {{.F.first}}() (ret *{{.NodeT}}) {
 	for n := tr.n; n != nil; n = n.{{.LinkN}}.nodes[1].n {
 		ret = n
 	}
 	return
 }
-{{- if .CmpVal}}
-func (tr *{{.TreeT}}) lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
+{{- end -}}
+{{- if .CmpVal -}}
+{{- if .F.lookupVal}}
+
+func (tr *{{.TreeT}}) {{.F.lookupVal}}(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
 		// notice that the compare order is reversed to how lookup does, so less is more.
@@ -299,9 +337,11 @@ func (tr *{{.TreeT}}) lookupVal(x {{.CmpValType}}) *{{.NodeT}} {
 	}
 	return n
 }
+{{- end -}}
+{{- if .F.searchValGEQ}}
 
 // Find nearest value greater than or equal to x
-func (tr *{{.TreeT}}) searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
+func (tr *{{.TreeT}}) {{.F.searchValGEQ}}(x {{.CmpValType}}) *{{.NodeT}} {
 	// Empty tree can't match.
 	if tr.n == nil {
 		return nil
@@ -311,7 +351,7 @@ func (tr *{{.TreeT}}) searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
 		return tr.n
 	}
 	if !more {
-		l := tr.n.{{.LinkN}}.nodes[1].searchValGEQ(x)
+		l := tr.n.{{.LinkN}}.nodes[1].{{.F.searchValGEQ}}(x)
 		if l != nil {
 			_, less := l.{{.CmpF}}(tr.n)
 			if less {
@@ -320,11 +360,13 @@ func (tr *{{.TreeT}}) searchValGEQ(x {{.CmpValType}}) *{{.NodeT}} {
 		}
 		return tr.n
 	}
-	return tr.n.{{.LinkN}}.nodes[0].searchValGEQ(x)
+	return tr.n.{{.LinkN}}.nodes[0].{{.F.searchValGEQ}}(x)
 }
+{{- end -}}
+{{- if .F.searchValLEQ}}
 
 // Find nearest value less than or equal to x
-func (tr *{{.TreeT}}) searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
+func (tr *{{.TreeT}}) {{.F.searchValLEQ}}(x {{.CmpValType}}) *{{.NodeT}} {
 	// Empty tree can't match.
 	if tr.n == nil {
 		return nil
@@ -334,7 +376,7 @@ func (tr *{{.TreeT}}) searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
 		return tr.n
 	}
 	if more {
-		l := tr.n.{{.LinkN}}.nodes[0].searchValLEQ(x)
+		l := tr.n.{{.LinkN}}.nodes[0].{{.F.searchValLEQ}}(x)
 		if l != nil {
 			_, less := l.{{.CmpF}}(tr.n)
 			if !less {
@@ -343,10 +385,12 @@ func (tr *{{.TreeT}}) searchValLEQ(x {{.CmpValType}}) *{{.NodeT}} {
 		}
 		return tr.n
 	}
-	return tr.n.{{.LinkN}}.nodes[1].searchValLEQ(x)
+	return tr.n.{{.LinkN}}.nodes[1].{{.F.searchValLEQ}}(x)
 }
+{{- end -}}
+{{- if .F.deleteVal}}
 
-func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
+func (tr *{{.TreeT}}) {{.F.deleteVal}}(x {{.CmpValType}}) {
 	/*
 	 * We silently ignore deletions of elements that are
 	 * not in the tree. The options here are to return
@@ -368,16 +412,17 @@ func (tr *{{.TreeT}}) deleteVal(x {{.CmpValType}}) {
 			for r.{{.LinkN}}.nodes[1].n != nil {
 				r = r.{{.LinkN}}.nodes[1].n
 			}
-			tr.n.{{.LinkN}}.nodes[0].delete(r)
+			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(r)
 			r.{{.LinkN}}.nodes = tr.n.{{.LinkN}}.nodes
 			tr.n = r
 			tr.reheight()
 		}
 	} else {
-		tr.n.{{.LinkN}}.nodes[btoi(!more)].deleteVal(x)
+		tr.n.{{.LinkN}}.nodes[btoi(!more)].{{.F.deleteVal}}(x)
 		tr.rebalance()
 	}
 }
+{{- end -}}
 {{- end -}}
 {{- if .IterT}}
 
@@ -389,8 +434,9 @@ type {{.IterT}} struct {
 	// The path we took to reach the previous element.
 	path []*{{.TreeT}}
 }
+{{- if .F.iter}}
 
-func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} {
+func (tr *{{.TreeT}}) {{.F.iter}}(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} {
 	it := &{{.IterT}}{start: start, end: end, incs: incs, ince: ince, path: make([]*{{.TreeT}}, 0, tr.height())}
 	if start != nil {
 		it.findStartPath(tr)
@@ -398,7 +444,7 @@ func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} 
 		it.diveDown(tr)
 	}
 	if end == nil {
-		it.end = tr.last()
+		it.end = tr.{{.F.last}}()
 	}
 	// Explicitly handle start == end.
 	if it.start == it.end && it.incs != it.ince {
@@ -410,15 +456,17 @@ func (tr *{{.TreeT}}) iter(start, end *{{.NodeT}}, incs, ince bool) *{{.IterT}} 
 	it.rev = !less && !eq
 	return it
 }
+{{- end -}}
 {{- if .CmpVal }}
+{{- if .F.iterVal}}
 
 // start, end - start and end values of iteration.
 // edgeStart,edgeEnd - ignore start/end and start/end the iteration at the edge of the tree.
 // incs, ince - include the start/end value in the iteration.
-func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, incs, ince bool) *{{.IterT}} {
+func (tr *{{.TreeT}}) {{.F.iterVal}}(start, end {{.CmpValType}}, edgeStart, edgeEnd, incs, ince bool) *{{.IterT}} {
 	var s, e *{{.NodeT}}
 	if !edgeStart {
-		s = tr.searchValLEQ(start)
+		s = tr.{{.F.searchValLEQ}}(start)
 		if eq, _ := s.{{.CmpVal}}(start); !eq {
 			// If we got a value less than start,
 			// force incs to false since we don't
@@ -427,7 +475,7 @@ func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, in
 		}
 	}
 	if !edgeEnd {
-		e = tr.searchValGEQ(end)
+		e = tr.{{.F.searchValGEQ}}(end)
 		if eq, _ := e.{{.CmpVal}}(end); !eq {
 			// If we got a value greater than end,
 			// force ince to false since we don't
@@ -435,8 +483,9 @@ func (tr *{{.TreeT}}) iterVal(start, end {{.CmpValType}}, edgeStart, edgeEnd, in
 			ince = false
 		}
 	}
-	return tr.iter(s, e, incs, ince)
+	return tr.{{.F.iter}}(s, e, incs, ince)
 }
+{{- end -}}
 {{- end}}
 
 // Helper function, don't use.
@@ -509,31 +558,32 @@ func (it *{{.IterT}}) next() bool {
 		return false
 	}
 }
-{{- end}}
-{{- if .Foreach}}
-func (tr *{{.TreeT}}) foreach(b, m, a func(*{{.NodeT}})) {
+{{- end -}}
+{{- if .F.foreach}}
+
+func (tr *{{.TreeT}}) {{.F.foreach}}(b, m, a func(*{{.NodeT}})) {
 	if tr.n == nil {
 		return
 	}
 	if b != nil {
 		b(tr.n)
 	}
-	tr.n.{{.LinkN}}.nodes[0].foreach(b, m, a)
+	tr.n.{{.LinkN}}.nodes[0].{{.F.foreach}}(b, m, a)
 	if m != nil {
 		m(tr.n)
 	}
-	tr.n.{{.LinkN}}.nodes[1].foreach(b, m, a)
+	tr.n.{{.LinkN}}.nodes[1].{{.F.foreach}}(b, m, a)
 	if a != nil {
 		a(tr.n)
 	}
 }
-{{- end}}
-{{- if .Check}}
+{{- end -}}
+{{- if .F.check}}
 
 // This function has a bit wonky prototype, but it's
 // more natural to foreach on nodes and we want to
 // be able to plug this into foreach.
-func (tr *{{.TreeT}}) check(n *{{.NodeT}}) error {
+func (tr *{{.TreeT}}) {{.F.check}}(n *{{.NodeT}}) error {
 	lh := n.{{.LinkN}}.nodes[0].height()
 	rh := n.{{.LinkN}}.nodes[1].height()
 	nh := n.{{.LinkN}}.height

@@ -6,7 +6,7 @@ import "testing"
 
 type iKV struct {
 	k, v int
-	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug"`
+	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug,no:last,no:first"`
 }
 
 func (a *iKV) cmpiv(b *iKV) (bool, bool) {
@@ -129,7 +129,7 @@ func TestIntsSearchLEQ(t *testing.T) {
 
 type iv struct {
 	v   int
-	ivl ivl `avlgen:"ivt,cmpval:cmpk(int),iter,export"`
+	ivl ivl `avlgen:"ivt,cmpval:cmpk(int),iter,export,no:lookup,no:delete,no:deleteVal,no:lookupVal"`
 }
 
 func (a *iv) cmp(b *iv) (bool, bool) {

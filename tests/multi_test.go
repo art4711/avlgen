@@ -4,8 +4,8 @@ import "testing"
 
 type mt struct {
 	x, y int
-	mtlx mtlx `avlgen:"mtx,cmp:cmpx,iter"`
-	mtly mtly `avlgen:"mty,cmp:cmpy,iter"`
+	mtlx mtlx `avlgen:"mtx,cmp:cmpx,iter,no:delete,no:lookup"`
+	mtly mtly `avlgen:"mty,cmp:cmpy,iter,no:delete,no:lookup"`
 }
 
 func (a *mt) cmpx(b *mt) (bool, bool) {

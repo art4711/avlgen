@@ -7,7 +7,7 @@ import (
 
 type ss struct {
 	k, v string
-	tsl  tsl `avlgen:"sst,cmpval:cmpk(string)"`
+	tsl  tsl `avlgen:"sst,cmpval:cmpk(string),no:delete,no:lookup,no:deleteVal,no:searchValGEQ,no:searchValLEQ,no:first,no:last"`
 }
 
 func (a *ss) cmp(b *ss) (bool, bool) {
@@ -16,6 +16,18 @@ func (a *ss) cmp(b *ss) (bool, bool) {
 
 func (a *ss) cmpk(b string) (bool, bool) {
 	return a.k == b, a.k < b
+}
+
+func TestStrings(t *testing.T) {
+	tr := sst{}
+
+	for i := 'a'; i < 'z'; i++ {
+		tr.insert(&ss{k: string([]rune{i})})
+	}
+	tr.insert(&ss{k: "foo", v: "bar"})
+	if v := tr.lookupVal("foo"); v == nil || v.v != "bar" {
+		t.Errorf("bad foo: %v", v)
+	}
 }
 
 func BenchmarkSS1Mlinear(b *testing.B) {

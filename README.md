@@ -82,7 +82,7 @@ this:
 
     var arr [2]*Foo
     var b bool
-    b := cmp(...)
+    b = cmp(...)
     x := 0
     if b {
         x = 1

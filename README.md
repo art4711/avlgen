@@ -59,7 +59,7 @@ in Go.
 
 Unfortunately, everything I said in the previous paragraph only
 applies to this implementation if it's compiled with a good C
-compiler. The Go compiler is comically bad at generating good code
+compiler. The Go compiler is quite bad at generating good code
 here. I agree that the language shouldn't define numerical values for
 booleans, but in return the compiler should understand how to optimize
 this:
@@ -139,3 +139,11 @@ surprisingly slow on lookup though).
 
 The big win here is that the tree allocates approximately half the
 memory of map in all tested cases. And it's ordered.
+
+## Should this tool generate other embedded data structures?
+
+It's pretty trivial to add other data structures to this tool. The tag
+would need to change just a little. The biggest change would be
+renaming the tool. I've decided against this because I currently have
+no particular need for anything other than ordered sets. Even though
+I miss TAILQs sometimes.

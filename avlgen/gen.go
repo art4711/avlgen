@@ -584,17 +584,12 @@ func (tr *{{.TreeT}}) {{.F.check}}(n *{{.NodeT}}) error {
 	rh := n.{{.LinkN}}.nodes[1].height()
 	nh := n.{{.LinkN}}.height
 	// Verify height invariants
+	eh := rh + 1
 	if lh > rh {
-		if nh != lh+1 {
-			return fmt.Errorf("nodes[0].height %d + 1 != n.height %d", lh, nh)
-		}
-	} else {
-		if nh != rh+1 {
-			return fmt.Errorf("nodes[1] height %d + 1 != n.height %d", rh, nh)
-		}
+		eh = lh + 1
 	}
 	balance := lh - rh
-	if balance < -1 || balance > 1 {
+	if eh != nh || balance < -1 || balance > 1 {
 		return fmt.Errorf("bad balance: %d %d %d, %V", nh, rh, lh, n)
 	}
 	ln := n.{{.LinkN}}.nodes[0].n

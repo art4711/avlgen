@@ -275,7 +275,7 @@ func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
 		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
 			tr.n = tr.n.{{.LinkN}}.nodes[0].n
 		} else {
-			next := tr.n.{{.LinkN}}.nodes[0].first()
+			next := tr.n.{{.LinkN}}.nodes[0].{{.F.first}}()
 			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
 			next.{{.LinkN}} = tr.n.{{.LinkN}}
 			tr.n = next
@@ -407,7 +407,7 @@ func (tr *{{.TreeT}}) {{.F.deleteVal}}(x {{.CmpValType}}) {
 		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
 			tr.n = tr.n.{{.LinkN}}.nodes[0].n
 		} else {
-			next := tr.n.{{.LinkN}}.nodes[0].first()
+			next := tr.n.{{.LinkN}}.nodes[0].{{.F.first}}()
 			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
 			next.{{.LinkN}} = tr.n.{{.LinkN}}
 			tr.n = next

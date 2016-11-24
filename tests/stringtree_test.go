@@ -24,6 +24,9 @@ func TestStrings(t *testing.T) {
 	for i := 'a'; i < 'z'; i++ {
 		tr.insert(&ss{k: string([]rune{i})})
 	}
+	for i := '0'; i < '9'; i++ {
+		tr.insert(&ss{k: string([]rune{i})})
+	}
 	tr.insert(&ss{k: "foo", v: "bar"})
 	if v := tr.lookupVal("foo"); v == nil || v.v != "bar" {
 		t.Errorf("bad foo: %v", v)

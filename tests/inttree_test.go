@@ -135,7 +135,8 @@ func TestIntsSearchLEQ(t *testing.T) {
 	}
 }
 
-func TestIntsBalance(t *testing.T) {
+func TestIntsCoverage(t *testing.T) {
+	// This test triggers edge cases to get better coverage
 	tr := ikvt{}
 
 	tr.insert(&iKV{k: 5})
@@ -146,11 +147,30 @@ func TestIntsBalance(t *testing.T) {
 	tr.insert(&iKV{k: 7})
 	tr.insert(&iKV{k: 4})
 	tr.deleteVal(5)
-	tr.foreach(nil, nil, func(n *iKV) {
-		if err := tr.check(n); err != nil {
-			t.Errorf("%v", err)
+	tr.deleteVal(17)
+	tr.delete(&iKV{k: 17})
+	var err error
+	f := func(n *iKV) {
+		if e := tr.check(n); e != nil {
+			err = e
 		}
-	})
+	}
+	tr.foreach(f, f, f)
+	if err != nil {
+		t.Error(err)
+	}
+	broken := tr.lookupVal(6)
+	broken.k = 0
+	tr.foreach(f, nil, nil)
+	if err == nil {
+		t.Error("Expected error, got none")
+	}
+	broken.k = 6
+	broken.tl.height = 17
+	tr.foreach(f, nil, nil)
+	if err == nil {
+		t.Error("Expected error, got none")
+	}
 }
 
 func TestIntsRandom(t *testing.T) {

@@ -4,8 +4,8 @@ import "testing"
 
 type mt struct {
 	x, y int
-	mtlx mtlx `avlgen:"mtx,cmp:cmpx,iter,no:delete,no:lookup"`
-	mtly mtly `avlgen:"mty,cmp:cmpy,iter,no:delete,no:lookup"`
+	mtlx mtlx `avlgen:"mtx,cmp:cmpx,no:last"`
+	mtly mtly `avlgen:"mty,cmp:cmpy,no:delete,no:first,no:last"`
 }
 
 func (a *mt) cmpx(b *mt) (bool, bool) {
@@ -17,21 +17,30 @@ func (a *mt) cmpy(b *mt) (bool, bool) {
 }
 
 func TestMultiTree(t *testing.T) {
-	const sz = 100
 	tx := mtx{}
 	ty := mty{}
-	for i := 0; i < sz; i++ {
-		m := &mt{x: i, y: sz - i}
+
+	vals := []int{5, 2, 6, 3, 1, 7, 4}
+	for i := range vals {
+		m := &mt{x: vals[i], y: vals[len(vals)-1-i]}
 		tx.insert(m)
 		ty.insert(m)
 	}
-	ix := tx.iter(nil, nil, true, true)
-	iy := ty.iter(ty.last(), ty.first(), true, true)
-	for ix.next() && iy.next() {
-		x := ix.value()
-		y := iy.value()
-		if x != y {
-			t.Errorf("%v != %v", x, y)
+	for i := 1; i <= 7; i++ {
+		tx.delete(tx.lookup(&mt{x: 1 + ((i * 2) % 7)}))
+	}
+	for i := 1; i <= 7; i++ {
+		x := &mt{y: i}
+		if ty.lookup(x) == nil {
+			t.Error("!y")
 		}
 	}
+}
+
+func TestMultiCoverage(t *testing.T) {
+	cover := mtx{}
+	cover.insert(&mt{x: 1})
+	cover.insert(&mt{x: 3})
+	cover.insert(&mt{x: 2})
+	cover.delete(&mt{x: 17})
 }

@@ -240,6 +240,11 @@ func TestIntsIter(t *testing.T) {
 	t.Run("reverse", func(t *testing.T) {
 		tIntIter(t, 999, 0, tr.iter(tr.last(), tr.first(), true, true))
 	})
+	tr.deleteVal(5)
+	tr.deleteVal(15)
+	t.Run("reverse", func(t *testing.T) {
+		tIntIter(t, 6, 14, tr.iterVal(5, 15, false, false, true, true))
+	})
 }
 
 func BenchmarkII1Mlinear(b *testing.B) {

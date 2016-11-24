@@ -1,12 +1,15 @@
 package trees
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+)
 
 //go:generate go run ../cmd/avlgen/main.go .
 
 type iKV struct {
 	k, v int
-	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug,no:last,no:first"`
+	tl   tl `avlgen:"ikvt,cmp:cmpiv,cmpval:cmpk(int),debug,no:last"`
 }
 
 func (a *iKV) cmpiv(b *iKV) (bool, bool) {
@@ -18,7 +21,7 @@ func (a *iKV) cmpk(b int) (bool, bool) {
 }
 
 func TestIntsLookupVal(t *testing.T) {
-	tr := ikvt{}
+	tr := &ikvt{}
 
 	for i := 0; i < 600; i++ {
 		tr.insert(&iKV{k: i, v: i * 2})
@@ -30,6 +33,11 @@ func TestIntsLookupVal(t *testing.T) {
 			t.Errorf("%v != %v/%v\n", i*2, v, v2)
 		}
 	}
+	tr.foreach(nil, nil, func(n *iKV) {
+		if err := tr.check(n); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestIntsDel(t *testing.T) {
@@ -124,6 +132,47 @@ func TestIntsSearchLEQ(t *testing.T) {
 		if n.v != expect {
 			t.Errorf("%d %d != %d", i, expect, n.v)
 		}
+	}
+}
+
+func TestIntsBalance(t *testing.T) {
+	tr := ikvt{}
+
+	tr.insert(&iKV{k: 5})
+	tr.insert(&iKV{k: 2})
+	tr.insert(&iKV{k: 6})
+	tr.insert(&iKV{k: 3})
+	tr.insert(&iKV{k: 1})
+	tr.insert(&iKV{k: 7})
+	tr.insert(&iKV{k: 4})
+	tr.deleteVal(5)
+	tr.foreach(nil, nil, func(n *iKV) {
+		if err := tr.check(n); err != nil {
+			t.Errorf("%v", err)
+		}
+	})
+}
+
+func TestIntsRandom(t *testing.T) {
+	const sz = 10000
+	tr := &ikvt{}
+	ins, del := 0, 0
+	for i := 0; i < sz; i++ {
+		r := rand.Intn(sz)
+		if r > i {
+			if tr.lookupVal(r) == nil {
+				tr.insert(&iKV{k: r})
+				ins++
+			}
+		} else {
+			tr.deleteVal(r)
+			del++
+		}
+		tr.foreach(nil, nil, func(n *iKV) {
+			if err := tr.check(n); err != nil {
+				t.Errorf("%v || %d %d", err, i, r)
+			}
+		})
 	}
 }
 

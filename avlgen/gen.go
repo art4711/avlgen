@@ -222,7 +222,7 @@ func (tr *{{.TreeT}}) rebalance() {
 	}
 	d := btoi(bl)
 	bd := tr.n.{{.LinkN}}.nodes[d].balance()
-	if (bl && bd >= 0) || (br && bd <= 0) {
+	if (bl && bd > 0) || (br && bd < 0) {
 		tr.n.{{.LinkN}}.nodes[d].rotate(d)
 	}
 	tr.rotate(d ^ 1)
@@ -279,12 +279,11 @@ func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
 			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
 			next.{{.LinkN}} = tr.n.{{.LinkN}}
 			tr.n = next
+			tr.rebalance()
 		}
 	} else {
 		_, less := x.{{.CmpF}}(tr.n)
 		tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.delete}}(x)
-	}
-	if tr.n != nil {
 		tr.rebalance()
 	}
 }
@@ -412,11 +411,10 @@ func (tr *{{.TreeT}}) {{.F.deleteVal}}(x {{.CmpValType}}) {
 			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
 			next.{{.LinkN}} = tr.n.{{.LinkN}}
 			tr.n = next
+			tr.rebalance()
 		}
 	} else {
 		tr.n.{{.LinkN}}.nodes[btoi(!more)].{{.F.deleteVal}}(x)
-	}
-	if tr.n != nil {
 		tr.rebalance()
 	}
 }

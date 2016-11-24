@@ -237,7 +237,7 @@ func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
 		tr.n = x
 		return
 	}
-	_, less := x.{{.CmpF}}(tr.n)
+	_, less := tr.n.{{.CmpF}}(x)
 
 	/*
 	 * We need to decide how to handle equality.
@@ -252,7 +252,7 @@ func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
 	 *
 	 * The _ in the statement above is for equality.
 	 */
-	tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.insert}}(x)
+	tr.n.{{.LinkN}}.nodes[btoi(!less)].{{.F.insert}}(x)
 	tr.rebalance()
 }
 {{- end -}}
@@ -282,8 +282,8 @@ func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
 			tr.rebalance()
 		}
 	} else {
-		_, less := x.{{.CmpF}}(tr.n)
-		tr.n.{{.LinkN}}.nodes[btoi(less)].{{.F.delete}}(x)
+		_, less := tr.n.{{.CmpF}}(x)
+		tr.n.{{.LinkN}}.nodes[btoi(!less)].{{.F.delete}}(x)
 		tr.rebalance()
 	}
 }
@@ -294,11 +294,11 @@ func (tr *{{.TreeT}}) {{.F.lookup}}(x *{{.NodeT}}) *{{.NodeT}} {
 	n := tr.n
 
 	for n != nil {
-		eq, less := x.{{.CmpF}}(n)
+		eq, less := n.{{.CmpF}}(x)
 		if eq {
 			break
 		}
-		n = n.{{.LinkN}}.nodes[btoi(less)].n
+		n = n.{{.LinkN}}.nodes[btoi(!less)].n
 	}
 	return n
 }
@@ -328,11 +328,11 @@ func (tr *{{.TreeT}}) {{.F.lookupVal}}(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
 		// notice that the compare order is reversed to how lookup does, so less is more.
-		eq, more := n.{{.CmpVal}}(x)
+		eq, less := n.{{.CmpVal}}(x)
 		if eq {
 			break
 		}
-		n = n.{{.LinkN}}.nodes[btoi(!more)].n
+		n = n.{{.LinkN}}.nodes[btoi(!less)].n
 	}
 	return n
 }
@@ -345,15 +345,15 @@ func (tr *{{.TreeT}}) {{.F.searchValGEQ}}(x {{.CmpValType}}) *{{.NodeT}} {
 	if tr.n == nil {
 		return nil
 	}
-	eq, more := tr.n.{{.CmpVal}}(x)
+	eq, less := tr.n.{{.CmpVal}}(x)
 	if eq {
 		return tr.n
 	}
-	if !more {
+	if !less {
 		l := tr.n.{{.LinkN}}.nodes[1].{{.F.searchValGEQ}}(x)
 		if l != nil {
-			_, less := l.{{.CmpF}}(tr.n)
-			if less {
+			_, less := tr.n.{{.CmpF}}(l)
+			if !less {
 				return l
 			}
 		}
@@ -370,15 +370,15 @@ func (tr *{{.TreeT}}) {{.F.searchValLEQ}}(x {{.CmpValType}}) *{{.NodeT}} {
 	if tr.n == nil {
 		return nil
 	}
-	eq, more := tr.n.{{.CmpVal}}(x)
+	eq, less := tr.n.{{.CmpVal}}(x)
 	if eq {
 		return tr.n
 	}
-	if more {
+	if less {
 		l := tr.n.{{.LinkN}}.nodes[0].{{.F.searchValLEQ}}(x)
 		if l != nil {
-			_, less := l.{{.CmpF}}(tr.n)
-			if !less {
+			_, less := tr.n.{{.CmpF}}(l)
+			if less {
 				return l
 			}
 		}
@@ -497,11 +497,11 @@ func (it *{{.IterT}}) diveDown(t *{{.TreeT}}) {
 func (it *{{.IterT}}) findStartPath(t *{{.TreeT}}) {
 	for {
 		it.path = append(it.path, t)
-		eq, less := it.start.{{.CmpF}}(t.n)
+		eq, less := t.n.{{.CmpF}}(it.start)
 		if eq {
 			break
 		}
-		t = &t.n.{{.LinkN}}.nodes[btoi(less)]
+		t = &t.n.{{.LinkN}}.nodes[btoi(!less)]
 	}
 }
 
@@ -537,8 +537,8 @@ func (it *{{.IterT}}) next() bool {
 		} else {
 			for {
 				it.path = it.path[:len(it.path)-1]
-				_, less := it.start.{{.CmpF}}(it.path[len(it.path)-1].n)
-				if less != it.rev {
+				_, less := it.path[len(it.path)-1].n.{{.CmpF}}(it.start)
+				if less == it.rev {
 					break
 				}
 			}

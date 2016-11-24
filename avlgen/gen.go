@@ -230,30 +230,33 @@ func (tr *{{.TreeT}}) rebalance() {
 {{- if .F.insert}}
 
 func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
-	if tr.n == nil {
-		x.{{.LinkN}}.nodes[0].n = nil
-		x.{{.LinkN}}.nodes[1].n = nil
-		x.{{.LinkN}}.height = 1
-		tr.n = x
-		return
+	path := [64]*{{.TreeT}}{}
+	depth := 0
+	for tr.n != nil {
+		path[depth] = tr
+		depth++
+		_, less := tr.n.{{.CmpF}}(x)
+		/*
+		 * We need to decide how to handle equality.
+		 *
+		 * Four options:
+		 * 1. Silently assume it doesn't happen, just insert
+		 *    duplicate elements. It's your foot and your
+		 *    trigger. (current choice)
+		 * 2. Silently ignore and don't insert.
+		 * 3. Refuse to insert, return boolean for success.
+		 * 4. Replace, return old element.
+		 */
+		tr = &tr.n.{{.LinkN}}.nodes[btoi(!less)]
 	}
-	_, less := tr.n.{{.CmpF}}(x)
+	x.{{.LinkN}}.nodes[0].n = nil
+	x.{{.LinkN}}.nodes[1].n = nil
+	x.{{.LinkN}}.height = 1
+	tr.n = x
 
-	/*
-	 * We need to decide how to handle equality.
-	 *
-	 * Four options:
-	 * 1. Silently assume it doesn't happen, just insert
-	 *    duplicate elements. It's your foot and your
-	 *    trigger. (current choice)
-	 * 2. Silently ignore and don't insert.
-	 * 3. Refuse to insert, return boolean for success.
-	 * 4. Replace, return old element.
-	 *
-	 * The _ in the statement above is for equality.
-	 */
-	tr.n.{{.LinkN}}.nodes[btoi(!less)].{{.F.insert}}(x)
-	tr.rebalance()
+	for i := depth-1; i >= 0; i-- {
+		path[i].rebalance()
+	}
 }
 {{- end -}}
 {{- if .F.delete}}

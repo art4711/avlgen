@@ -267,6 +267,16 @@ func TestIntsIter(t *testing.T) {
 	})
 }
 
+func fastPop(sz int) *ikvt {
+	tr := ikvt{}
+	a := make([]iKV, sz)
+	for i := range a {
+		a[i].k = i
+		tr.insert(&a[i])
+	}
+	return &tr
+}
+
 func BenchmarkII1Mlinear(b *testing.B) {
 	const sz = 1000000
 
@@ -309,6 +319,9 @@ func BenchmarkII1Mlinear(b *testing.B) {
 	b.Run("delete", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
+			b.StopTimer()
+			tr := fastPop(sz)
+			b.StartTimer()
 			for i := 0; i < sz; i++ {
 				tr.delete(tr.lookupVal(i))
 			}
@@ -318,6 +331,9 @@ func BenchmarkII1Mlinear(b *testing.B) {
 	b.Run("deleteVal", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
+			b.StopTimer()
+			tr := fastPop(sz)
+			b.StartTimer()
 			for i := 0; i < sz; i++ {
 				tr.deleteVal(i)
 			}
@@ -355,6 +371,12 @@ func BenchmarkMapII1Mlinear(b *testing.B) {
 	b.Run("delete", func(b *testing.B) {
 		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
+			b.StopTimer()
+			tr := map[int]int{}
+			for i := 0; i < sz; i++ {
+				tr[i] = i
+			}
+			b.StartTimer()
 			for i := 0; i < sz; i++ {
 				delete(tr, i)
 			}

@@ -254,7 +254,7 @@ func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
 	x.{{.LinkN}}.height = 1
 	tr.n = x
 
-	for i := depth-1; i >= 0; i-- {
+	for i := depth - 1; i >= 0; i-- {
 		path[i].rebalance()
 	}
 }
@@ -262,32 +262,47 @@ func (tr *{{.TreeT}}) {{.F.insert}}(x *{{.NodeT}}) {
 {{- if .F.delete}}
 
 func (tr *{{.TreeT}}) {{.F.delete}}(x *{{.NodeT}}) {
-	/*
-	 * We silently ignore deletions of elements that are
-	 * not in the tree. The options here are to return
-	 * something or panic or do nothing. All three equally
-	 * valid.
-	 */
-	if tr.n == nil {
-		return
+	path := [64]*{{.TreeT}}{}
+	depth := 0
+	for tr.n != x {
+		/*
+		 * We silently ignore deletions of elements that are
+		 * not in the tree. The options here are to return
+		 * something or panic or do nothing. All three equally
+		 * valid.
+		 */
+		if tr.n == nil {
+			return
+		}
+		path[depth] = tr
+		depth++
+
+		_, less := tr.n.{{.CmpF}}(x)
+		tr = &tr.n.{{.LinkN}}.nodes[btoi(!less)]
 	}
 
-	if tr.n == x {
-		if tr.n.{{.LinkN}}.nodes[0].n == nil {
-			tr.n = tr.n.{{.LinkN}}.nodes[1].n
-		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
-			tr.n = tr.n.{{.LinkN}}.nodes[0].n
-		} else {
-			next := tr.n.{{.LinkN}}.nodes[0].{{.F.first}}()
-			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
-			next.{{.LinkN}} = tr.n.{{.LinkN}}
-			tr.n = next
-			tr.rebalance()
-		}
+	if tr.n.{{.LinkN}}.nodes[0].n == nil {
+		tr.n = tr.n.{{.LinkN}}.nodes[1].n
+	} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
+		tr.n = tr.n.{{.LinkN}}.nodes[0].n
 	} else {
-		_, less := tr.n.{{.CmpF}}(x)
-		tr.n.{{.LinkN}}.nodes[btoi(!less)].{{.F.delete}}(x)
-		tr.rebalance()
+		path[depth] = tr
+		depth++
+		// Find next node in the tree.
+		ntr := &tr.n.{{.LinkN}}.nodes[0]
+		for ntr.n.{{.LinkN}}.nodes[1].n != nil {
+			path[depth] = ntr
+			depth++
+			ntr = &ntr.n.{{.LinkN}}.nodes[1]
+		}
+		// delete it (we know that nodes[1] is empty)
+		next := ntr.n
+		ntr.n = next.{{.LinkN}}.nodes[0].n
+		next.{{.LinkN}} = tr.n.{{.LinkN}}
+		tr.n = next
+	}
+	for i := depth - 1; i >= 0; i-- {
+		path[i].rebalance()
 	}
 }
 {{- end -}}
@@ -393,32 +408,48 @@ func (tr *{{.TreeT}}) {{.F.searchValLEQ}}(x {{.CmpValType}}) *{{.NodeT}} {
 {{- if .F.deleteVal}}
 
 func (tr *{{.TreeT}}) {{.F.deleteVal}}(x {{.CmpValType}}) {
-	/*
-	 * We silently ignore deletions of elements that are
-	 * not in the tree. The options here are to return
-	 * something or panic or do nothing. All three equally
-	 * valid.
-	 */
-	if tr.n == nil {
-		return
-	}
-
-	eq, more := tr.n.{{.CmpVal}}(x)
-	if eq {
-		if tr.n.{{.LinkN}}.nodes[0].n == nil {
-			tr.n = tr.n.{{.LinkN}}.nodes[1].n
-		} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
-			tr.n = tr.n.{{.LinkN}}.nodes[0].n
-		} else {
-			next := tr.n.{{.LinkN}}.nodes[0].{{.F.first}}()
-			tr.n.{{.LinkN}}.nodes[0].{{.F.delete}}(next)
-			next.{{.LinkN}} = tr.n.{{.LinkN}}
-			tr.n = next
-			tr.rebalance()
+	path := [64]*{{.TreeT}}{}
+	depth := 0
+	for {
+		/*
+		 * We silently ignore deletions of elements that are
+		 * not in the tree. The options here are to return
+		 * something or panic or do nothing. All three equally
+		 * valid.
+		 */
+		if tr.n == nil {
+			return
 		}
+		eq, less := tr.n.{{.CmpVal}}(x)
+		if eq {
+			break
+		}
+		path[depth] = tr
+		depth++
+		tr = &tr.n.{{.LinkN}}.nodes[btoi(!less)]
+	}
+	if tr.n.{{.LinkN}}.nodes[0].n == nil {
+		tr.n = tr.n.{{.LinkN}}.nodes[1].n
+	} else if tr.n.{{.LinkN}}.nodes[1].n == nil {
+		tr.n = tr.n.{{.LinkN}}.nodes[0].n
 	} else {
-		tr.n.{{.LinkN}}.nodes[btoi(!more)].{{.F.deleteVal}}(x)
-		tr.rebalance()
+		path[depth] = tr
+		depth++
+		// Find next node in the tree.
+		ntr := &tr.n.{{.LinkN}}.nodes[0]
+		for ntr.n.{{.LinkN}}.nodes[1].n != nil {
+			path[depth] = ntr
+			depth++
+			ntr = &ntr.n.{{.LinkN}}.nodes[1]
+		}
+		// delete it (we know that nodes[1] is empty)
+		next := ntr.n
+		ntr.n = next.{{.LinkN}}.nodes[0].n
+		next.{{.LinkN}} = tr.n.{{.LinkN}}
+		tr.n = next
+	}
+	for i := depth - 1; i >= 0; i-- {
+		path[i].rebalance()
 	}
 }
 {{- end -}}

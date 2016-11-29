@@ -196,48 +196,50 @@ func (tr *{{.TreeT}}) reheight() {
 	}
 }
 
-func (tr *{{.TreeT}}) balance() int {
-	l := tr.n.{{.LinkN}}.nodes[0].height()
-	r := tr.n.{{.LinkN}}.nodes[1].height()
-	if l > r {
-		tr.n.{{.LinkN}}.height = l + 1
-	} else {
-		tr.n.{{.LinkN}}.height = r + 1
-	}
-	return l - r
-}
-
-
-func (tr *{{.TreeT}}) leans(d int) bool {
-	notd := (d ^ 1) & 1
-	return tr.n.{{.LinkN}}.nodes[d].height() < tr.n.{{.LinkN}}.nodes[notd].height()
-}
-
-func (tr *{{.TreeT}}) rotate(d int) {
-	n := tr.n
-	d &= 1 // Remind the compiler that d is 0 or 1 to eliminate bounds checks
-	notd := (d ^ 1) & 1
-
-	pivot := n.{{.LinkN}}.nodes[notd].n
-	n.{{.LinkN}}.nodes[notd].n = pivot.{{.LinkN}}.nodes[d].n
-	pivot.{{.LinkN}}.nodes[d].n = n
-	pivot.{{.LinkN}}.nodes[d].reheight()
-	tr.n = pivot
-	tr.reheight()
-}
-
 func (tr *{{.TreeT}}) rebalance() {
-	bal := tr.balance()
-	bl, br := bal < -1, bal > 1
-	if !(bl || br) {
-		return
+	lh := tr.n.{{.LinkN}}.nodes[0].height()
+	rh := tr.n.{{.LinkN}}.nodes[1].height()
+	if lh > rh {
+		tr.n.{{.LinkN}}.height = lh + 1
+		if lh - rh < 2 {
+			return
+		}
+		child := &tr.n.{{.LinkN}}.nodes[0]
+		if child.n.{{.LinkN}}.nodes[0].height() < child.n.{{.LinkN}}.nodes[1].height() {
+			pivot := child.n.{{.LinkN}}.nodes[1].n
+			child.n.{{.LinkN}}.nodes[1].n = pivot.{{.LinkN}}.nodes[0].n
+			pivot.{{.LinkN}}.nodes[0].n = child.n
+			pivot.{{.LinkN}}.nodes[0].reheight()
+			child.n = pivot
+			child.reheight()
+		}
+		pivot := child.n
+		tr.n.{{.LinkN}}.nodes[0].n = pivot.{{.LinkN}}.nodes[1].n
+		pivot.{{.LinkN}}.nodes[1].n = tr.n
+		pivot.{{.LinkN}}.nodes[1].reheight()
+		tr.n = pivot
+		tr.reheight()
+	} else {
+		tr.n.{{.LinkN}}.height = rh + 1
+		if rh - lh < 2 {
+			return
+		}
+		child := &tr.n.{{.LinkN}}.nodes[1]
+		if child.n.{{.LinkN}}.nodes[1].height() < child.n.{{.LinkN}}.nodes[0].height() {
+			pivot := child.n.{{.LinkN}}.nodes[0].n
+			child.n.{{.LinkN}}.nodes[0].n = pivot.{{.LinkN}}.nodes[1].n
+			pivot.{{.LinkN}}.nodes[1].n = child.n
+			pivot.{{.LinkN}}.nodes[1].reheight()
+			child.n = pivot
+			child.reheight()
+		}
+		pivot := child.n
+		tr.n.{{.LinkN}}.nodes[1].n = pivot.{{.LinkN}}.nodes[0].n
+		pivot.{{.LinkN}}.nodes[0].n = tr.n
+		pivot.{{.LinkN}}.nodes[0].reheight()
+		tr.n = pivot
+		tr.reheight()
 	}
-	d := btoi(bl)
-	child := &tr.n.{{.LinkN}}.nodes[d]
-	if child.leans(d) {
-		child.rotate(d)
-	}
-	tr.rotate(d ^ 1)
 }
 {{- if .F.insert}}
 

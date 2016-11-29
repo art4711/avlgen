@@ -197,7 +197,20 @@ func (tr *{{.TreeT}}) reheight() {
 }
 
 func (tr *{{.TreeT}}) balance() int {
-	return tr.n.{{.LinkN}}.nodes[0].height() - tr.n.{{.LinkN}}.nodes[1].height()
+	l := tr.n.{{.LinkN}}.nodes[0].height()
+	r := tr.n.{{.LinkN}}.nodes[1].height()
+	if l > r {
+		tr.n.{{.LinkN}}.height = l + 1
+	} else {
+		tr.n.{{.LinkN}}.height = r + 1
+	}
+	return l - r
+}
+
+
+func (tr *{{.TreeT}}) leans(d int) bool {
+	notd := (d ^ 1) & 1
+	return tr.n.{{.LinkN}}.nodes[d].height() < tr.n.{{.LinkN}}.nodes[notd].height()
 }
 
 func (tr *{{.TreeT}}) rotate(d int) {
@@ -214,16 +227,15 @@ func (tr *{{.TreeT}}) rotate(d int) {
 }
 
 func (tr *{{.TreeT}}) rebalance() {
-	tr.reheight()
 	bal := tr.balance()
 	bl, br := bal < -1, bal > 1
 	if !(bl || br) {
 		return
 	}
 	d := btoi(bl)
-	bd := tr.n.{{.LinkN}}.nodes[d].balance()
-	if (bl && bd > 0) || (br && bd < 0) {
-		tr.n.{{.LinkN}}.nodes[d].rotate(d)
+	child := &tr.n.{{.LinkN}}.nodes[d]
+	if child.leans(d) {
+		child.rotate(d)
 	}
 	tr.rotate(d ^ 1)
 }
@@ -345,7 +357,6 @@ func (tr *{{.TreeT}}) {{.F.first}}() (ret *{{.NodeT}}) {
 func (tr *{{.TreeT}}) {{.F.lookupVal}}(x {{.CmpValType}}) *{{.NodeT}} {
 	n := tr.n
 	for n != nil {
-		// notice that the compare order is reversed to how lookup does, so less is more.
 		eq, less := n.{{.CmpVal}}(x)
 		if eq {
 			break

@@ -277,110 +277,123 @@ func fastPop(sz int) *ikvt {
 	return &tr
 }
 
-func BenchmarkII1Mlinear(b *testing.B) {
-	const sz = 1000000
+const benchsz = 1000000
 
+func BenchmarkII1M(b *testing.B) {
 	tr := ikvt{}
+	offs := rand.Perm(benchsz)
 	b.Run("insert", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
 			tr = ikvt{} // drop the whole tree each time
-			for i := 0; i < sz; i++ {
-				tr.insert(&iKV{k: i, v: i * 3})
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				tr.insert(&iKV{k: j, v: j * 3})
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
+	offs = rand.Perm(benchsz) // reinit offs so that lookups aren't the same permutation as inserts.
 	// we have one tree left
 	b.Run("lookup", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
-			for i := 0; i < sz; i++ {
-				kv := tr.lookup(&iKV{k: i})
-				if kv.v != i*3 {
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				kv := tr.lookup(&iKV{k: j})
+				if kv.v != j*3 {
 					b.Fatal("bad value %v\n", kv)
 				}
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
+	offs = rand.Perm(benchsz)
 	b.Run("lookupVal", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
-			for i := 0; i < sz; i++ {
-				kv := tr.lookupVal(i)
-				if kv.v != i*3 {
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				kv := tr.lookupVal(j)
+				if kv.v != j*3 {
 					b.Fatal("bad value %v\n", kv)
 				}
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
+	offs = rand.Perm(benchsz)
 	b.Run("delete", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
 			b.StopTimer()
-			tr := fastPop(sz)
+			tr := fastPop(benchsz)
 			b.StartTimer()
-			for i := 0; i < sz; i++ {
-				tr.delete(tr.lookupVal(i))
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				tr.delete(tr.lookupVal(j))
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
+	offs = rand.Perm(benchsz)
 	b.Run("deleteVal", func(b *testing.B) {
 		for bn := 0; bn < b.N; bn++ {
 			b.ReportAllocs()
 			b.StopTimer()
-			tr := fastPop(sz)
+			tr := fastPop(benchsz)
 			b.StartTimer()
-			for i := 0; i < sz; i++ {
-				tr.deleteVal(i)
+			for i := 0; i < benchsz; i++ {
+				tr.deleteVal(offs[i])
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
 }
 
-func BenchmarkMapII1Mlinear(b *testing.B) {
-	const sz = 1000000
+func BenchmarkMapII1M(b *testing.B) {
 	tr := map[int]int{}
+	offs := rand.Perm(benchsz)
 	b.Run("insert", func(b *testing.B) {
 		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
 			tr = map[int]int{} // drop the whole map each time
-			for i := 0; i < sz; i++ {
-				tr[i] = i * 3
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				tr[j] = j * 3
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
 	// we have one map left
+	offs = rand.Perm(benchsz) // reinit offs so that lookups aren't the same permutation as inserts.
 	b.Run("lookup", func(b *testing.B) {
 		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
-			for i := 0; i < sz; i++ {
-				v := tr[i]
-				if v != i*3 {
+			for i := 0; i < benchsz; i++ {
+				j := offs[i]
+				v := tr[j]
+				if v != j*3 {
 					b.Fatal("bad value %v\n", v)
 				}
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
+	offs = rand.Perm(benchsz)
 	b.Run("delete", func(b *testing.B) {
 		b.ReportAllocs()
 		for bn := 0; bn < b.N; bn++ {
 			b.StopTimer()
 			tr := map[int]int{}
-			for i := 0; i < sz; i++ {
+			for i := 0; i < benchsz; i++ {
 				tr[i] = i
 			}
 			b.StartTimer()
-			for i := 0; i < sz; i++ {
-				delete(tr, i)
+			for i := 0; i < benchsz; i++ {
+				delete(tr, offs[i])
 			}
-			b.SetBytes(sz)
+			b.SetBytes(benchsz)
 		}
 	})
 }

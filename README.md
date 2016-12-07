@@ -128,30 +128,40 @@ The Go compiler (1.7.3) manages:
 
 Let's do three branches instead of three instructions.
 
-I still haven't found a way to fix this. There is a mention in an
-issue that the compiler in tip (1.8?) should be able to deal with
-this better: https://github.com/golang/go/issues/6011#issuecomment-254303032
-
 Update: I managed to remove the bounds check by doing a useless `& 1`
 in a few strategic places, replacing a branch with one useless
 instruction, but we still get the expensive branch for converting the
 boolean to int.
 
+## Use 1.8
+
+The compiler in Go 1.8beta1 generates good code here. The speedups are
+significant, up to 30% on certain benchmarks.
+
+As a minor surprise, the 1.7.3 compiled (branching) version was faster
+than 1.8beta1 when doing lookups in the tree in the same order as the
+elements were inserted (which is a pretty unrealistic scenario, the
+benchmark was terribly stupid so I fixed it). If I had to speculate it
+is because we were accessing the elements in the same order they were
+allocated and the allocator probably allocates them pretty much
+linearly, so everything comes in a nice cache order. The branches
+probably triggered speculative execution which caused prefetching of
+cache lines we'd need soon anyway. The 1.8 code on the other hand
+probably makes the CPU wait for the address to be fully computed
+before fetching things from memory, so we didn't get the accidental
+prefetch. The accidental prefetch helped linear access (since we'd
+need the cache lines) while it hurt the non-linear access (since we'd
+pollute cache with unnecessary stuff).
+
 ## Benchmarketing
 
-I did a quick benchmark of inserting a million int,int pairs into the
-AVL tree (one of the ints is the key) and compared it to
-`map[int]int`.  The results are pretty meaningless (because of `btoi`
-and because of different use cases), but AVL trees are 35% slower at
-insertions, 20% faster at lookups and within the margin of error same
-for deletes. Comparing a struct with string,string pair to a
-`map[string]string` shows pretty much the same for insertions and
-around 20% slower lookup speed.
+If you read this section before it looked much better. I've
+implemented a less stupid benchmark now.
 
-Also, a proper benchmark should replay a reasonable real work load,
-not just count up a few times. Of course maps are slow on insertion
-when the load I put on them is resizing them all the time. (they are
-surprisingly slow on lookup though).
+With a million int,int pairs in a tree vs. `map[int]int` the map is
+somewhere around 5-10x faster. As it should be, we should be touching
+around 20x more cache lines for every operation. The map starts
+outperforming the tree somewhere between 100 and 1000 elements.
 
 The big win here is that the tree allocates approximately half the
 memory of map in all tested cases. And it's ordered.
